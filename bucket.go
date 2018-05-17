@@ -5,9 +5,9 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/emirpasic/gods/lists/arraylist"
-	"github.com/kooksee/uspnet/common/hexutil"
+	"github.com/kooksee/common/hexutil"
 	"github.com/kooksee/log"
-	"github.com/kooksee/uspnet/common"
+	"github.com/kooksee/common"
 )
 
 type bucket struct {

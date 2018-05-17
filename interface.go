@@ -1,7 +1,7 @@
 package sp2p
 
 import (
-	"github.com/kooksee/uspnet/common"
+	"github.com/kooksee/common"
 )
 
 type IHandler func(*SP2p, *KMsg)

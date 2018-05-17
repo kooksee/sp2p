@@ -25,7 +25,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/kooksee/uspnet/log"
+	"github.com/kooksee/log"
 )
 
 // durationSlice attaches the methods of sort.Interface to []time.Duration,

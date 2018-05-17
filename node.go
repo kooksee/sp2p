@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kooksee/uspnet/common"
-	"github.com/kooksee/uspnet/crypto"
+	"github.com/kooksee/common"
+	"github.com/kooksee/crypt"
 )
 
 // Node represents a host on the network.

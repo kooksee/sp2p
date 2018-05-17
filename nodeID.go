@@ -7,7 +7,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"math/big"
-	"github.com/kooksee/uspnet/crypto"
+	"github.com/kooksee/crypt"
 	"errors"
 )
 

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger"
-	"github.com/kooksee/uspnet/common"
+	"github.com/kooksee/common"
 	"net"
 )
 

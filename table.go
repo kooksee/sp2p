@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/emirpasic/gods/sets/hashset"
-	"github.com/kooksee/uspnet/common"
+	"github.com/kooksee/common"
 )
 
 type Table struct {

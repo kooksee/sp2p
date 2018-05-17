@@ -7,12 +7,11 @@ import (
 	"net"
 	"sync"
 	"time"
-
-	"github.com/kooksee/uspnet/common"
-	"github.com/kooksee/uspnet/crypto/secp256k1"
-	"github.com/satori/go.uuid"
 	"crypto/ecdsa"
-	"github.com/kooksee/uspnet/crypto"
+	"github.com/kooksee/common"
+	"github.com/kooksee/crypt"
+	"github.com/kooksee/crypt/secp256k1"
+	"github.com/satori/go.uuid"
 )
 
 // recoverNodeID computes the public key used to sign the
