@@ -6,12 +6,6 @@ import (
 
 type IHandler func(*SP2p, *KMsg)
 
-type IP2p interface {
-	LoadSeeds([]string) error
-	Start()
-	Write(*KMsg) error
-}
-
 type ITable interface {
 	// 路由表大小
 	Size() int

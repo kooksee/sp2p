@@ -39,7 +39,6 @@ func NewSP2p(seeds []string) *SP2p {
 }
 
 type SP2p struct {
-	IP2p
 	tab       *Table
 	txRC      chan *KMsg
 	txWC      chan *KMsg
@@ -48,47 +47,48 @@ type SP2p struct {
 }
 
 func (s *SP2p) loadSeeds(seeds []string) error {
-	return cfg.Db.Update(func(txn *badger.Txn) error {
-		k := []byte(cfg.NodesBackupKey)
-		iter := txn.NewIterator(badger.DefaultIteratorOptions)
-		for iter.Seek(k); ; iter.Next() {
-			if !iter.ValidForPrefix(k) {
-				break
-			}
+	txn := cfg.Db.NewTransaction(true)
+	defer txn.Discard()
 
-			val, err := iter.Item().Value()
-			if err != nil {
-				logger.Error(err.Error())
-				continue
-			}
-
-			seeds = append(seeds, string(val))
+	k := []byte(cfg.NodesBackupKey)
+	iter := txn.NewIterator(badger.DefaultIteratorOptions)
+	for iter.Seek(k); ; iter.Next() {
+		if !iter.ValidForPrefix(k) {
+			break
 		}
 
-		for _, rn := range seeds {
-			n := MustParseNode(rn)
-			n.updateAt = time.Now()
-			s.tab.AddNode(n)
-			go s.pingNode(n.addr().String())
+		val, err := iter.Item().Value()
+		if err != nil {
+			logger.Error(err.Error())
+			continue
 		}
 
-		// 节点启动的时候如果发现节点数量少,就去请求其他节点
-		if s.tab.Size() < cfg.MinNodeSize {
-			// 每一个域选取一个节点
-			for _, b := range s.tab.buckets {
-				b.peers.Each(func(index int, value interface{}) {
-					go s.findNode(value.(*Node).addr().String(), 8)
-				})
-			}
-		} else if s.tab.Size() < cfg.MaxNodeSize {
-			// 每一个域选取一个节点
-			for _, b := range s.tab.buckets {
-				go s.findNode(b.Random().addr().String(), 8)
-			}
-		}
+		seeds = append(seeds, string(val))
+	}
 
-		return nil
-	})
+	for _, rn := range seeds {
+		n := MustParseNode(rn)
+		n.updateAt = time.Now()
+		s.tab.AddNode(n)
+		go s.pingNode(n.addr().String())
+	}
+
+	// 节点启动的时候如果发现节点数量少,就去请求其他节点
+	if s.tab.Size() < cfg.MinNodeSize {
+		// 节点太少的情况下，就去所有的节点去请求数据
+		for _, b := range s.tab.buckets {
+			b.peers.Each(func(index int, value interface{}) {
+				go s.findNode(value.(*Node).addr().String(), 8)
+			})
+		}
+	} else if s.tab.Size() < cfg.MaxNodeSize {
+		// 每一个域选取一个节点
+		for _, b := range s.tab.buckets {
+			go s.findNode(b.Random().addr().String(), 8)
+		}
+	}
+
+	return txn.Commit(nil)
 }
 
 func (s *SP2p) dumpSeeds() {
@@ -101,7 +101,7 @@ func (s *SP2p) dumpSeeds() {
 		}
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error("dumpSeeds error", "err", err)
 	}
 }
 
@@ -110,7 +110,6 @@ func (s *SP2p) loop() {
 		select {
 		case <-cfg.NodeBackupTick.C:
 			go s.dumpSeeds()
-
 		case <-cfg.FindNodeTick.C:
 			for _, b := range s.tab.buckets {
 				if b == nil {
@@ -118,17 +117,16 @@ func (s *SP2p) loop() {
 				}
 				go s.findNode(b.Random().addr().String(), 8)
 			}
-
 		case <-cfg.PingTick.C:
 			for _, n := range s.tab.FindRandomNodes(20) {
 				go s.pingNode(n.addr().String())
 			}
-
+		case <-cfg.NtpTick.C:
+			go checkClockDrift()
 		case tx := <-s.txRC:
 			if hm.Contain(tx.Event) {
 				go hm.GetHandler(tx.Event)(s, tx)
 			}
-
 		case tx := <-s.txWC:
 			if err := s.write(tx); err != nil {
 				logger.Error("write tx error", "err", err)
@@ -166,12 +164,14 @@ func (s *SP2p) write(msg *KMsg) error {
 func (s *SP2p) GetTable() *Table {
 	return s.tab
 }
+
 func (s *SP2p) pingNode(taddr string) {
 	s.Write(&KMsg{
 		Event: "ping",
 		TAddr: taddr,
 	})
 }
+
 func (s *SP2p) findNode(taddr string, n int) {
 	s.Write(&KMsg{
 		Event: "findNode",
@@ -194,7 +194,7 @@ func (s *SP2p) accept() {
 
 		msg := &KMsg{}
 		if err := msg.Decode(message); err != nil {
-			logger.Error("kmsg decode error", "err", err)
+			logger.Error("msg decode error", "err", err)
 			continue
 		}
 		s.txRC <- msg

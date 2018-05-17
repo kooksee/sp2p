@@ -11,6 +11,8 @@ import (
 	"github.com/kooksee/uspnet/common"
 	"github.com/kooksee/uspnet/crypto/secp256k1"
 	"github.com/satori/go.uuid"
+	"crypto/ecdsa"
+	"github.com/kooksee/uspnet/crypto"
 )
 
 // recoverNodeID computes the public key used to sign the
@@ -150,4 +152,19 @@ func NodeFromKMsg(msg *KMsg) (*Node, error) {
 		return nil, err
 	}
 	return NewNode(nid, addr.IP, uint16(addr.Port)), nil
+}
+
+func randomID() (id NodeID) {
+	for i := range id {
+		id[i] = byte(rand.Intn(255))
+	}
+	return id
+}
+
+func newkey() *ecdsa.PrivateKey {
+	key, err := crypto.GenerateKey()
+	if err != nil {
+		panic("couldn't generate key: " + err.Error())
+	}
+	return key
 }

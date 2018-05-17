@@ -34,6 +34,7 @@ type KConfig struct {
 	PingTick       *time.Ticker
 	FindNodeTick   *time.Ticker
 	PingKcpTick    *time.Ticker
+	NtpTick        *time.Ticker
 
 	// 节点长度
 	NodeIDBits int
@@ -108,6 +109,7 @@ func DefaultKConfig() *KConfig {
 		PingTick:       time.NewTicker(10 * time.Minute),
 		FindNodeTick:   time.NewTicker(1 * time.Hour),
 		PingKcpTick:    time.NewTicker(2 * time.Second),
+		NtpTick:        time.NewTicker(10 * time.Minute),
 
 		MaxNodeSize: 2000,
 		MinNodeSize: 100,

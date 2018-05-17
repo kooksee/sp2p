@@ -22,10 +22,7 @@ func (t *KMsg) DecodeFromConn(r io.Reader) error {
 		return err
 	}
 	message = bytes.TrimSpace(message)
-	if err := json.Unmarshal(message, t); err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal(message, t)
 }
 
 func (t *KMsg) Decode(msg []byte) error {
