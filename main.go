@@ -4,10 +4,10 @@ import (
 	"errors"
 	"net"
 	"time"
-
-	"github.com/dgraph-io/badger"
 	"bufio"
 	"bytes"
+
+	"github.com/dgraph-io/badger"
 )
 
 func NewSP2p(seeds []string) *SP2p {
@@ -17,32 +17,37 @@ func NewSP2p(seeds []string) *SP2p {
 		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
 	}
 
+	if cfg.ExportAddr == nil {
+		panic("请设置ExportAddr")
+	}
+
 	conn, err := net.ListenUDP("udp", p2p.localAddr)
 	if err != nil {
 		panic(err.Error())
 	}
 	p2p.conn = conn
 
-	tab := newTable(PubkeyID(&cfg.PriV.PublicKey), p2p.localAddr)
-	p2p.tab = tab
+	p2p.tab = newTable(PubkeyID(&cfg.PriV.PublicKey), cfg.ExportAddr)
 
 	go p2p.accept()
 	go p2p.loop()
 
+	if err := p2p.loadSeeds(seeds); err != nil {
+		panic(err.Error())
+	}
 	return p2p
 }
 
 type SP2p struct {
 	IP2p
-	tab        *Table
-	txRC       chan *KMsg
-	txWC       chan *KMsg
-	conn       *net.UDPConn
-	localAddr  *net.UDPAddr
-	exportAddr *net.UDPAddr
+	tab       *Table
+	txRC      chan *KMsg
+	txWC      chan *KMsg
+	conn      *net.UDPConn
+	localAddr *net.UDPAddr
 }
 
-func (s *SP2p) LoadSeeds(seeds []string) error {
+func (s *SP2p) loadSeeds(seeds []string) error {
 	return cfg.Db.Update(func(txn *badger.Txn) error {
 		k := []byte(cfg.NodesBackupKey)
 		iter := txn.NewIterator(badger.DefaultIteratorOptions)

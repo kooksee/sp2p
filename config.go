@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/kooksee/uspnet/common"
+	"net"
 )
 
 type KConfig struct {
@@ -71,6 +72,8 @@ type KConfig struct {
 	MaxNodeSize int
 	MinNodeSize int
 	Version     string
+
+	ExportAddr *net.UDPAddr
 }
 
 func DefaultKConfig() *KConfig {
