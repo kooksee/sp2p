@@ -5,7 +5,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/emirpasic/gods/lists/arraylist"
-	hexutil "github.com/kooksee/uspnet/common/hexutil"
+	"github.com/kooksee/uspnet/common/hexutil"
 	"github.com/kooksee/log"
 	"github.com/kooksee/uspnet/common"
 )
@@ -34,23 +34,27 @@ func (b *bucket) addNodes(nodes ... *Node) {
 		b.peers.Add(nodes)
 	}
 
-	// 把最活跃的放到最前面,然后移除最不活跃的
 	b.peers.Sort(func(a, b interface{}) int { return int(b.(*Node).updateAt.Sub(a.(*Node).updateAt)) })
 	size := b.peers.Size()
-	if size > cfg.BucketSize {
-		cfg.Db.Update(func(txn *badger.Txn) error {
-			for i := cfg.BucketSize; i < size; i++ {
-				val, e := b.peers.Get(i)
-				if !e {
-					continue
-				}
-				b.peers.Remove(i)
-				if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
-					return err
-				}
+	if size < cfg.BucketSize {
+		return
+	}
+
+	// 把最活跃的放到最前面,然后移除最不活跃的
+	if err := cfg.Db.Update(func(txn *badger.Txn) error {
+		for i := cfg.BucketSize; i < size; i++ {
+			val, e := b.peers.Get(i)
+			if !e {
+				continue
 			}
-			return nil
-		})
+			b.peers.Remove(i)
+			if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		logger.Error("update peer", "err", err)
 	}
 }
 
@@ -82,23 +86,27 @@ func (b *bucket) getLast(n int) []*Node {
 }
 
 func (b *bucket) deleteNodes(targets ... common.Hash) {
-	for _, node := range targets {
-		if a := b.peers.IndexOf(node); a != -1 {
-			log.Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
-			b.peers.Remove(a)
+	if err := cfg.Db.Update(func(txn *badger.Txn) error {
+		for _, node := range targets {
+			if a := b.peers.IndexOf(node); a != -1 {
+				val, bl := b.peers.Get(a)
+				if !bl {
+					continue
+				}
+				if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
+					return err
+				}
+				log.Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
+				b.peers.Remove(a)
+			}
 		}
+
+		return nil
+	}); err != nil {
+		logger.Error("update peer", "err", err)
 	}
 }
 
 func (b *bucket) size() int {
 	return b.peers.Size()
-}
-
-// printNodeList only use for debug test
-func (b *bucket) printNodeList() {
-	log.Debug("bucket size %d", b.peers.Size())
-
-	b.peers.Each(func(index int, value interface{}) {
-		log.Debug("%s", hexutil.BytesToHex(value.(common.Hash).Bytes()))
-	})
 }
