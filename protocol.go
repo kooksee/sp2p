@@ -11,7 +11,7 @@ type FindNodeResp struct {
 type KV struct {
 	K       string      `json:"k,omitempty"`
 	V       interface{} `json:"v,omitempty"`
-	Expired int         `json:"v,omitempty"`
+	Expired int         `json:"expired,omitempty"`
 }
 
 type KVGetReq struct {
@@ -21,4 +21,3 @@ type KVGetReq struct {
 type KVGetResp struct {
 	KV
 }
-

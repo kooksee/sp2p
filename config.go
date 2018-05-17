@@ -25,12 +25,6 @@ type KConfig struct {
 	// Kademlia bucket size
 	BucketSize int
 
-	// 网络响应超时时间
-	RespTimeout time.Duration
-	// 网络发送超时时间
-	SendTimeout time.Duration
-	// 过期时间
-	Expiration time.Duration
 	// Allowed clock drift before warning user
 	DriftThreshold time.Duration
 
@@ -60,9 +54,6 @@ type KConfig struct {
 	ConnReadTimeout  time.Duration
 	ConnWriteTimeout time.Duration
 
-	// version
-	Version string
-
 	Crypt string
 	Key   string
 	Salt  string
@@ -79,6 +70,7 @@ type KConfig struct {
 
 	MaxNodeSize int
 	MinNodeSize int
+	Version     string
 }
 
 func DefaultKConfig() *KConfig {
@@ -89,9 +81,6 @@ func DefaultKConfig() *KConfig {
 		NtpPool:             "pool.ntp.org",
 		NtpChecks:           3,
 		BucketSize:          16,
-		RespTimeout:         500 * time.Millisecond,
-		SendTimeout:         500 * time.Millisecond,
-		Expiration:          20 * time.Second,
 		DriftThreshold:      10 * time.Second,
 		NodeIDBits:          512,
 		Alpha:               3,
@@ -119,5 +108,6 @@ func DefaultKConfig() *KConfig {
 
 		MaxNodeSize: 2000,
 		MinNodeSize: 100,
+		Version:     "1.0.0",
 	}
 }

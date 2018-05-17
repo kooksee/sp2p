@@ -10,7 +10,7 @@ import (
 	"bytes"
 )
 
-func NewSP2p() *SP2p {
+func NewSP2p(seeds []string) *SP2p {
 	p2p := &SP2p{
 		txRC:      make(chan *KMsg, 2000),
 		txWC:      make(chan *KMsg, 2000),
@@ -25,6 +25,9 @@ func NewSP2p() *SP2p {
 
 	tab := newTable(PubkeyID(&cfg.PriV.PublicKey), p2p.localAddr)
 	p2p.tab = tab
+
+	go p2p.accept()
+	go p2p.loop()
 
 	return p2p
 }

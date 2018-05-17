@@ -27,6 +27,8 @@ type ITable interface {
 	FindRandomNodes(int) []*Node
 	// 查找距离最近的n个节点
 	FindMinDisNodes(common.Hash, int) []*Node
-	// 查找相比另一个节点的更近的节点
+	// 查找目标相比本节点更近的节点
+	FindNodeWithTargetBySelf(common.Hash) []*Node
+	// 查找目标相比另一个节点的更近的节点
 	FindNodeWithTarget(common.Hash, common.Hash) []*Node
 }

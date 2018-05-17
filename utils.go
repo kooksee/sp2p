@@ -66,7 +66,6 @@ func timeAdd(ts time.Duration) time.Time {
 type KBuffer struct {
 	buf   map[string][]byte
 	Delim []byte
-
 	sync.RWMutex
 }
 
