@@ -5,9 +5,8 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/emirpasic/gods/lists/arraylist"
-	"github.com/kooksee/common/hexutil"
-	"github.com/kooksee/log"
 	"github.com/kooksee/common"
+	"github.com/kooksee/common/hexutil"
 )
 
 type bucket struct {
@@ -30,8 +29,8 @@ func (b *bucket) updateNodes(nodes ... *Node) {
 // addNode add node to bucket, if bucket is full, will remove an old one
 func (b *bucket) addNodes(nodes ... *Node) {
 	for _, node := range nodes {
-		log.Info("add node: %s", hexutil.BytesToHex(node.ID.Bytes()))
-		b.peers.Add(nodes)
+		logger.Info("add node","node", node.String())
+		b.peers.Add(node)
 	}
 
 	b.peers.Sort(func(a, b interface{}) int { return int(b.(*Node).updateAt.Sub(a.(*Node).updateAt)) })
@@ -96,7 +95,7 @@ func (b *bucket) deleteNodes(targets ... common.Hash) {
 				if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
 					return err
 				}
-				log.Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
+				logger.Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
 				b.peers.Remove(a)
 			}
 		}

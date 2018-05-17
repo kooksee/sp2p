@@ -11,12 +11,14 @@ import (
 	"github.com/kooksee/common"
 )
 
+const NBuckets = len(common.Hash{})*8 + 1
+
 type Table struct {
 	ITable
 
 	mutex sync.Mutex // protects buckets, their content, and nursery
 
-	buckets  [cfg.NBuckets]*bucket
+	buckets  [NBuckets]*bucket
 	selfNode *Node //info of local node
 }
 
@@ -26,7 +28,7 @@ func newTable(id NodeID, addr *net.UDPAddr) *Table {
 		selfNode: NewNode(id, addr.IP, uint16(addr.Port)),
 	}
 
-	for i := 0; i < cfg.NBuckets; i++ {
+	for i := 0; i < NBuckets; i++ {
 		table.buckets[i] = newBuckets()
 	}
 
@@ -78,8 +80,8 @@ func (t *Table) FindRandomNodes(n int) []*Node {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	if n > cfg.NBuckets {
-		n = cfg.NBuckets
+	if n > NBuckets {
+		n = NBuckets
 	} else if n < 1 {
 		n = 5
 	}
@@ -130,8 +132,8 @@ func (t *Table) DeleteNode(target common.Hash) {
 }
 
 func (t *Table) FindMinDisNodes(target common.Hash, number int) []*Node {
-	if number > cfg.NBuckets {
-		number = cfg.NBuckets
+	if number > NBuckets {
+		number = NBuckets
 	} else if number < 1 {
 		number = 5
 	}

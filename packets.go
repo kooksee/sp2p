@@ -132,6 +132,7 @@ func kvSet(p *SP2p, msg *KMsg) {
 }
 
 func init() {
+	hm := GetHManager()
 	hm.Registry("findNode", findNode)
 	hm.Registry("ping", ping)
 	hm.Registry("kvSet", kvSet)

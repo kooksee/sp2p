@@ -24,8 +24,6 @@ import (
 	"net"
 	"sort"
 	"time"
-
-	"github.com/kooksee/log"
 )
 
 // durationSlice attaches the methods of sort.Interface to []time.Duration,
@@ -43,11 +41,11 @@ func checkClockDrift() {
 	if err != nil {
 		return
 	}
-	if drift < -cfg.DriftThreshold || drift > cfg.DriftThreshold{
-		log.Warn(fmt.Sprintf("System clock seems off by %v, which can prevent network connectivity", drift))
-		log.Warn("Please enable network time synchronisation in system settings.")
+	if drift < -cfg.DriftThreshold || drift > cfg.DriftThreshold {
+		logger.Warn(fmt.Sprintf("System clock seems off by %v, which can prevent network connectivity", drift))
+		logger.Warn("Please enable network time synchronisation in system settings.")
 	} else {
-		log.Debug("NTP sanity check done", "drift", drift)
+		logger.Debug("NTP sanity check done", "drift", drift)
 	}
 }
 

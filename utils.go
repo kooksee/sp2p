@@ -64,28 +64,32 @@ func timeAdd(ts time.Duration) time.Time {
 	return time.Now().Add(ts)
 }
 
+func NewKBuffer(Delim []byte) *KBuffer {
+	return &KBuffer{
+		Delim: Delim,
+	}
+}
+
 type KBuffer struct {
-	buf   map[string][]byte
+	buf   []byte
 	Delim []byte
 	sync.RWMutex
 }
 
-func (t *KBuffer) Add(key string, b []byte) {
+func (t *KBuffer) Next(b []byte) [][]byte {
 	t.Lock()
 	defer t.Unlock()
 
-	t.buf[key] = append(t.buf[key], b...)
-}
+	if b == nil {
+		return nil
+	}
 
-func (t *KBuffer) Next(key string) [][]byte {
-	t.RLock()
-	defer t.RUnlock()
-
-	if len(t.buf) != 0 {
-		d := bytes.Split(t.buf[key], t.Delim)
+	t.buf = append(t.buf, b...)
+	if len(t.buf) > 0 {
+		d := bytes.Split(t.buf, t.Delim)
 		if len(d) > 1 {
-			t.buf[key] = d[len(d)-1]
-			return d[:len(d)-2]
+			t.buf = d[len(d)-1]
+			return d[:len(d)-1]
 		}
 	}
 	return nil

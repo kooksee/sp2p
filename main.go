@@ -4,21 +4,22 @@ import (
 	"errors"
 	"net"
 	"time"
-	"bufio"
-	"bytes"
-
 	"github.com/dgraph-io/badger"
+	"strings"
+	"io"
+	"bytes"
 )
 
 func NewSP2p(seeds []string) *SP2p {
 	p2p := &SP2p{
 		txRC:      make(chan *KMsg, 2000),
 		txWC:      make(chan *KMsg, 2000),
-		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
+		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")},
 	}
 
 	if cfg.ExportAddr == nil {
-		panic("请设置ExportAddr")
+		cfg.ExportAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
+		logger.Error("请设置ExportAddr")
 	}
 
 	conn, err := net.ListenUDP("udp", p2p.localAddr)
@@ -78,6 +79,7 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 		// 节点太少的情况下，就去所有的节点去请求数据
 		for _, b := range s.tab.buckets {
 			b.peers.Each(func(index int, value interface{}) {
+				logger.Error(value.(*Node).addr().String())
 				go s.findNode(value.(*Node).addr().String(), 8)
 			})
 		}
@@ -144,7 +146,7 @@ func (s *SP2p) write(msg *KMsg) error {
 		msg.FAddr = s.localAddr.String()
 	}
 	if msg.FID == "" {
-		msg.FID = s.tab.selfNode.ID.String()
+		msg.FID = s.tab.selfNode.sha.String()
 	}
 	if msg.ID == "" {
 		msg.ID = string(UUID())
@@ -155,7 +157,9 @@ func (s *SP2p) write(msg *KMsg) error {
 	if msg.TAddr == "" {
 		return errors.New("目标地址不存在")
 	}
-	if _, err := s.conn.Write(msg.Dumps()); err != nil {
+
+	addr, _ := net.ResolveUDPAddr("udp", msg.TAddr)
+	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
 		return err
 	}
 	return nil
@@ -181,22 +185,45 @@ func (s *SP2p) findNode(taddr string, n int) {
 }
 
 func (s *SP2p) accept() {
-	s.conn.SetReadDeadline(time.Now().Add(cfg.ConnReadTimeout))
-	read := bufio.NewReader(s.conn)
+	kb := NewKBuffer([]byte{'\n'})
 	for {
-		message, err := read.ReadBytes(cfg.DELIMITER)
-		if err != nil {
-			logger.Info("udp read error ", "err", err.Error())
-			break
-		}
-		message = bytes.TrimSpace(message)
-		logger.Debug("udp message", "msg", string(message))
+		buf := make([]byte, 1024*16)
+		n, addr, err := s.conn.ReadFromUDP(buf)
+		if err == nil {
+			logger.Debug("udp message", "msg", string(buf), "addr", addr.String())
+			messages := kb.Next(buf[:n])
+			if messages == nil {
+				continue
+			}
 
-		msg := &KMsg{}
-		if err := msg.Decode(message); err != nil {
-			logger.Error("msg decode error", "err", err)
+			for _, m := range messages {
+				if m == nil || bytes.Equal(m, []byte{}) {
+					continue
+				}
+
+				msg := &KMsg{}
+				if err := msg.Decode(m); err != nil {
+					logger.Error("tx msg decode error", "err", err, "method", "accept")
+					continue
+				}
+				s.txRC <- msg
+			}
 			continue
 		}
-		s.txRC <- msg
+		if strings.Contains(err.Error(), "timeout") {
+			logger.Debug(err.Error())
+
+			for _, n := range s.tab.FindRandomNodes(20) {
+				logger.Error(n.String())
+				go s.pingNode(n.addr().String())
+			}
+
+			time.Sleep(time.Second * 2)
+			continue
+		} else if err == io.EOF {
+			break
+		} else if err != nil {
+			logger.Error("udp read error ", "err", err)
+		}
 	}
 }

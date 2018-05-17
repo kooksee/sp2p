@@ -8,11 +8,12 @@ import (
 
 var (
 	hmOnce sync.Once
+	hm     *HandleManager
 )
 
 func GetHManager() *HandleManager {
 	hmOnce.Do(func() {
-		hm = &HandleManager{}
+		hm = &HandleManager{hmap: make(map[string]IHandler)}
 	})
 	return hm
 }

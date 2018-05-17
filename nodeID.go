@@ -11,9 +11,11 @@ import (
 	"errors"
 )
 
+const NodeIDBits = 512
+
 // NodeID is a unique identifier for each node.
 // The node identifier is a marshaled elliptic curve public key.
-type NodeID [cfg.NodeIDBits / 8]byte
+type NodeID [NodeIDBits / 8]byte
 
 // Bytes returns a byte slice representation of the NodeID
 func (n NodeID) Bytes() []byte {

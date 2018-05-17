@@ -82,9 +82,8 @@ func (n *Node) String() string {
 	if n.Incomplete() {
 		u.Host = fmt.Sprintf("%x", n.ID[:])
 	} else {
-		//addr := net.TCPAddr{IP: n.IP, Port: int(n.TCP)}
 		u.User = url.User(fmt.Sprintf("%x", n.ID[:]))
-		//u.Host = addr.String()
+		u.Host = n.addr().String()
 	}
 	return u.String()
 }

@@ -36,9 +36,6 @@ type KConfig struct {
 	PingKcpTick    *time.Ticker
 	NtpTick        *time.Ticker
 
-	// 节点长度
-	NodeIDBits int
-
 	// Kademlia concurrency factor
 	Alpha int
 	// 节点响应的数量
@@ -50,17 +47,12 @@ type KConfig struct {
 
 	// 节点ID长度
 	HashBits int
-	// K桶的数量
-	NBuckets int
 
 	ConnReadTimeout  time.Duration
 	ConnWriteTimeout time.Duration
 
-	Crypt string
-	Key   string
-	Salt  string
-	Host  string
-	Port  int
+	Host string
+	Port int
 
 	Db *badger.DB
 
@@ -75,6 +67,7 @@ type KConfig struct {
 	Version     string
 
 	ExportAddr *net.UDPAddr
+	LogLevel   string
 }
 
 func DefaultKConfig() *KConfig {
@@ -86,20 +79,15 @@ func DefaultKConfig() *KConfig {
 		NtpChecks:           3,
 		BucketSize:          16,
 		DriftThreshold:      10 * time.Second,
-		NodeIDBits:          512,
 		Alpha:               3,
 		NodeResponseNumber:  8,
 		NodeBroadcastNumber: 16,
 		NodePartitionNumber: 8,
 		HashBits:            len(common.Hash{}) * 8,
-		NBuckets:            len(common.Hash{})*8 + 1,
 
 		ConnReadTimeout:  5 * time.Second,
 		ConnWriteTimeout: 5 * time.Second,
 
-		Crypt:          "aes-128",
-		Key:            "hello",
-		Salt:           "hello",
 		Host:           "0.0.0.0",
 		Port:           8080,
 		NodesBackupKey: "nbk:",
@@ -114,5 +102,8 @@ func DefaultKConfig() *KConfig {
 		MaxNodeSize: 2000,
 		MinNodeSize: 100,
 		Version:     "1.0.0",
+
+		ExportAddr: nil,
+		LogLevel:   "info",
 	}
 }

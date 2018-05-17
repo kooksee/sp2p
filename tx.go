@@ -31,5 +31,5 @@ func (t *KMsg) Decode(msg []byte) error {
 
 func (t *KMsg) Dumps() []byte {
 	d, _ := json.Marshal(t)
-	return append(d, "\n"...)
+	return append(d, '\n')
 }
