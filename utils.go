@@ -179,3 +179,7 @@ func MustNotErr(err error) {
 	logger.Error("MustNotErr", "err", err)
 	panic(err.Error())
 }
+
+func NodesBackupKey(k []byte) []byte {
+	return append([]byte(cfg.NodesBackupKey), k...)
+}

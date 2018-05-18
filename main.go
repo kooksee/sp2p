@@ -1,7 +1,6 @@
 package sp2p
 
 import (
-	"errors"
 	"net"
 	"time"
 	"strings"
@@ -15,7 +14,7 @@ func NewSP2p(seeds []string) *SP2p {
 	p2p := &SP2p{
 		txRC:      make(chan *KMsg, 2000),
 		txWC:      make(chan *KMsg, 2000),
-		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")},
+		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
 	}
 
 	if cfg.ExportAddr == nil {
@@ -60,7 +59,7 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 
 		val, err := iter.Item().Value()
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("loadSeeds", "err", err)
 			continue
 		}
 
@@ -95,17 +94,15 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 }
 
 func (s *SP2p) dumpSeeds() {
-	if err := cfg.Db.Update(func(txn *badger.Txn) error {
+	cfg.Db.Update(func(txn *badger.Txn) error {
 		for _, n := range s.tab.GetAllNodes() {
-			k := append([]byte(cfg.NodesBackupKey), n.ID.Bytes()...)
-			if err := txn.Set(k, []byte(n.String())); err != nil {
-				return err
+			if err := txn.Set(NodesBackupKey(n.ID.Bytes()), []byte(n.String())); err != nil {
+				logger.Error("dumpSeeds", "err", err)
+				continue
 			}
 		}
 		return nil
-	}); err != nil {
-		logger.Error("dumpSeeds error", "err", err)
-	}
+	})
 }
 
 func (s *SP2p) loop() {
@@ -114,28 +111,15 @@ func (s *SP2p) loop() {
 		case <-cfg.NodeBackupTick.C:
 			go s.dumpSeeds()
 		case <-cfg.FindNodeTick.C:
-			for _, b := range s.tab.buckets {
-				if b == nil {
-					continue
-				}
-				go s.findNode(b.Random().addr().String(), 8)
-			}
+			go s.findN()
 		case <-cfg.PingTick.C:
-			for _, n := range s.tab.FindRandomNodes(20) {
-				go s.pingNode(n.addr().String())
-			}
+			go s.pingN()
 		case <-cfg.NtpTick.C:
 			go checkClockDrift()
 		case tx := <-s.txRC:
-			logger.Debug("receive tx", "tx", tx.Data.String(), "faddr", tx.FAddr)
-			logger.Debug(string(tx.Dumps()))
 			go tx.Data.OnHandle(s, tx)
 		case tx := <-s.txWC:
-			logger.Debug("write tx", "tx", tx.Data.String(), "taddr", tx.TAddr)
-			logger.Debug(string(tx.Dumps()))
-			if err := s.write(tx); err != nil {
-				logger.Error("write tx error", "err", err)
-			}
+			go s.write(tx)
 		}
 	}
 }
@@ -144,7 +128,7 @@ func (s *SP2p) Write(msg *KMsg) {
 	s.txWC <- msg
 }
 
-func (s *SP2p) write(msg *KMsg) error {
+func (s *SP2p) write(msg *KMsg) {
 	if msg.FAddr == "" {
 		msg.FAddr = s.localAddr.String()
 	}
@@ -155,20 +139,19 @@ func (s *SP2p) write(msg *KMsg) error {
 		msg.Version = cfg.Version
 	}
 	if msg.TAddr == "" {
-		return errors.New("目标地址不存在")
+		logger.Error("目标地址不存在")
+		return
 	}
-	//msg.DT = msg.Data.DT()
 
 	addr, err := net.ResolveUDPAddr("udp", msg.TAddr)
 	if err != nil {
 		logger.Error("ResolveUDPAddr error", "err", err)
-		return err
+		return
 	}
 	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
 		logger.Error("WriteToUDP error", "err", err)
-		return err
+		return
 	}
-	return nil
 }
 
 func (s *SP2p) GetTable() *Table {
@@ -182,6 +165,11 @@ func (s *SP2p) pingNode(taddr string) {
 		Data:  &PingReq{},
 	})
 }
+func (s *SP2p) pingN() {
+	for _, n := range s.tab.FindRandomNodes(20) {
+		s.pingNode(n.addr().String())
+	}
+}
 
 func (s *SP2p) findNode(taddr string, n int) {
 	s.Write(&KMsg{
@@ -191,10 +179,19 @@ func (s *SP2p) findNode(taddr string, n int) {
 	})
 }
 
+func (s *SP2p) findN() {
+	for _, b := range s.tab.buckets {
+		if b == nil || b.size() == 0 {
+			continue
+		}
+		s.findNode(b.Random().addr().String(), 8)
+	}
+}
+
 func (s *SP2p) accept() {
 	kb := NewKBuffer([]byte{'\n'})
 	for {
-		buf := make([]byte, 1024*16)
+		buf := make([]byte, cfg.MaxBufLen)
 		n, addr, err := s.conn.ReadFromUDP(buf)
 		if err == nil {
 			logger.Debug("udp message", "addr", addr.String())
@@ -219,15 +216,10 @@ func (s *SP2p) accept() {
 			continue
 		}
 		if strings.Contains(err.Error(), "timeout") {
-			logger.Debug(err.Error())
-
-			for _, n := range s.tab.FindRandomNodes(20) {
-				go s.pingNode(n.addr().String())
-			}
-
+			logger.Error("timeout", "err", err)
 			time.Sleep(time.Second * 2)
-			continue
 		} else if err == io.EOF {
+			logger.Error("udp read eof ", "err", err)
 			break
 		} else if err != nil {
 			logger.Error("udp read error ", "err", err)

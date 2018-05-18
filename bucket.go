@@ -35,9 +35,9 @@ func (b *bucket) addNodes(nodes ... *Node) {
 	for _, node := range nodes {
 		logger.Info("add node", "node", node.String())
 		b.peers.Add(node)
-		if err := txn.Set(append([]byte(cfg.NodesBackupKey), node.ID.Bytes()...), []byte(node.String())); err != nil {
-			logger.Error("set peer", "err", err)
-			return
+		if err := txn.Set(NodesBackupKey(node.ID.Bytes()), []byte(node.String())); err != nil {
+			logger.Error("set peer error", "err", err)
+			continue
 		}
 	}
 
@@ -53,14 +53,14 @@ func (b *bucket) addNodes(nodes ... *Node) {
 			continue
 		}
 		b.peers.Remove(i)
-		if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
-			logger.Error("delete peer", "err", err)
-			return
+		if err := txn.Delete(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
+			logger.Error("delete peer error", "err", err)
+			continue
 		}
 	}
 
 	if err := txn.Commit(nil); err != nil {
-		logger.Error("update peer", "err", err)
+		logger.Error("commit peer error", "err", err)
 	}
 }
 
@@ -73,22 +73,8 @@ func (b *bucket) Random() *Node {
 	if b.size() == 0 {
 		return nil
 	}
-	a := int(randUint(uint32(b.size())))
-	val, _ := b.peers.Get(a)
+	val, _ := b.peers.Get(int(randUint(uint32(b.size()))))
 	return val.(*Node)
-}
-
-func (b *bucket) getLast(n int) []*Node {
-	nodes := make([]*Node, n)
-	for i, j := b.peers.Size()-1, 0; ; {
-		if i >= 0 && j <= n {
-			v, _ := b.peers.Get(i)
-			nodes = append(nodes, v.(*Node))
-			j++
-			i--
-		}
-	}
-	return nodes
 }
 
 func (b *bucket) deleteNodes(targets ... common.Hash) {
@@ -99,8 +85,9 @@ func (b *bucket) deleteNodes(targets ... common.Hash) {
 				if !bl {
 					continue
 				}
-				if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
-					return err
+				if err := txn.Delete(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
+					logger.Error("deleteNodes error", "err", err)
+					continue
 				}
 				logger.Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
 				b.peers.Remove(a)

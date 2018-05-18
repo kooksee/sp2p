@@ -15,16 +15,12 @@ type KConfig struct {
 
 	// ntp服务器检测超时次数
 	NtpFailureThreshold int
-	// Minimum amount of time to pass before repeating NTP warning
 	//在重复NTP警告之前需要经过的最短时间
 	NtpWarningCooldown time.Duration
 	// ntpPool is the NTP server to query for the current time
 	NtpPool string
 	// Number of measurements to do against the NTP server
 	NtpChecks int
-
-	// Kademlia bucket size
-	BucketSize int
 
 	// Allowed clock drift before warning user
 	DriftThreshold time.Duration
@@ -77,7 +73,6 @@ func DefaultKConfig() *KConfig {
 		NtpWarningCooldown:  10 * time.Minute,
 		NtpPool:             "pool.ntp.org",
 		NtpChecks:           3,
-		BucketSize:          16,
 		DriftThreshold:      10 * time.Second,
 		Alpha:               3,
 		NodeResponseNumber:  8,
