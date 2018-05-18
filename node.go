@@ -82,6 +82,7 @@ func (n *Node) String() string {
 	if n.Incomplete() {
 		u.Host = fmt.Sprintf("%x", n.ID[:])
 	} else {
+		//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
 		u.User = url.User(fmt.Sprintf("%x", n.ID[:]))
 		u.Host = n.addr().String()
 	}

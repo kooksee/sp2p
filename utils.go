@@ -171,3 +171,11 @@ func newkey() *ecdsa.PrivateKey {
 	}
 	return key
 }
+
+func MustNotErr(err error) {
+	if err == nil {
+		return
+	}
+	logger.Error("MustNotErr", "err", err)
+	panic(err.Error())
+}

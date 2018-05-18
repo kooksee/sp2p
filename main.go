@@ -4,10 +4,11 @@ import (
 	"errors"
 	"net"
 	"time"
-	"github.com/dgraph-io/badger"
 	"strings"
 	"io"
 	"bytes"
+	"github.com/dgraph-io/badger"
+	"encoding/hex"
 )
 
 func NewSP2p(seeds []string) *SP2p {
@@ -27,7 +28,6 @@ func NewSP2p(seeds []string) *SP2p {
 		panic(err.Error())
 	}
 	p2p.conn = conn
-
 	p2p.tab = newTable(PubkeyID(&cfg.PriV.PublicKey), cfg.ExportAddr)
 
 	go p2p.accept()
@@ -68,8 +68,10 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 	}
 
 	for _, rn := range seeds {
+		if rn == s.tab.selfNode.String() {
+			continue
+		}
 		n := MustParseNode(rn)
-		n.updateAt = time.Now()
 		s.tab.AddNode(n)
 		go s.pingNode(n.addr().String())
 	}
@@ -79,7 +81,6 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 		// 节点太少的情况下，就去所有的节点去请求数据
 		for _, b := range s.tab.buckets {
 			b.peers.Each(func(index int, value interface{}) {
-				logger.Error(value.(*Node).addr().String())
 				go s.findNode(value.(*Node).addr().String(), 8)
 			})
 		}
@@ -126,10 +127,12 @@ func (s *SP2p) loop() {
 		case <-cfg.NtpTick.C:
 			go checkClockDrift()
 		case tx := <-s.txRC:
-			if hm.Contain(tx.Event) {
-				go hm.GetHandler(tx.Event)(s, tx)
-			}
+			logger.Debug("receive tx", "tx", tx.Data.String(), "faddr", tx.FAddr)
+			logger.Debug(string(tx.Dumps()))
+			go tx.Data.OnHandle(s, tx)
 		case tx := <-s.txWC:
+			logger.Debug("write tx", "tx", tx.Data.String(), "taddr", tx.TAddr)
+			logger.Debug(string(tx.Dumps()))
 			if err := s.write(tx); err != nil {
 				logger.Error("write tx error", "err", err)
 			}
@@ -145,11 +148,8 @@ func (s *SP2p) write(msg *KMsg) error {
 	if msg.FAddr == "" {
 		msg.FAddr = s.localAddr.String()
 	}
-	if msg.FID == "" {
-		msg.FID = s.tab.selfNode.sha.String()
-	}
 	if msg.ID == "" {
-		msg.ID = string(UUID())
+		msg.ID = hex.EncodeToString(UUID())
 	}
 	if msg.Version == "" {
 		msg.Version = cfg.Version
@@ -157,9 +157,15 @@ func (s *SP2p) write(msg *KMsg) error {
 	if msg.TAddr == "" {
 		return errors.New("目标地址不存在")
 	}
+	//msg.DT = msg.Data.DT()
 
-	addr, _ := net.ResolveUDPAddr("udp", msg.TAddr)
+	addr, err := net.ResolveUDPAddr("udp", msg.TAddr)
+	if err != nil {
+		logger.Error("ResolveUDPAddr error", "err", err)
+		return err
+	}
 	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
+		logger.Error("WriteToUDP error", "err", err)
 		return err
 	}
 	return nil
@@ -171,16 +177,17 @@ func (s *SP2p) GetTable() *Table {
 
 func (s *SP2p) pingNode(taddr string) {
 	s.Write(&KMsg{
-		Event: "ping",
 		TAddr: taddr,
+		FID:   s.tab.selfNode.ID.String(),
+		Data:  &PingReq{},
 	})
 }
 
 func (s *SP2p) findNode(taddr string, n int) {
 	s.Write(&KMsg{
-		Event: "findNode",
 		TAddr: taddr,
-		Data:  FindNodeReq{NID: s.tab.selfNode.ID.String(), N: n},
+		Data:  &FindNodeReq{N: n},
+		FID:   s.tab.selfNode.ID.String(),
 	})
 }
 
@@ -190,7 +197,8 @@ func (s *SP2p) accept() {
 		buf := make([]byte, 1024*16)
 		n, addr, err := s.conn.ReadFromUDP(buf)
 		if err == nil {
-			logger.Debug("udp message", "msg", string(buf), "addr", addr.String())
+			logger.Debug("udp message", "addr", addr.String())
+			logger.Debug(string(buf))
 			messages := kb.Next(buf[:n])
 			if messages == nil {
 				continue
@@ -214,7 +222,6 @@ func (s *SP2p) accept() {
 			logger.Debug(err.Error())
 
 			for _, n := range s.tab.FindRandomNodes(20) {
-				logger.Error(n.String())
 				go s.pingNode(n.addr().String())
 			}
 

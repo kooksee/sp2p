@@ -6,6 +6,12 @@ import (
 
 type IHandler func(*SP2p, *KMsg)
 
+type IMessage interface {
+	T() byte
+	String() string
+	OnHandle(*SP2p, *KMsg)
+}
+
 type ITable interface {
 	// 路由表大小
 	Size() int

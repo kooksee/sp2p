@@ -13,16 +13,16 @@ var (
 
 func GetHManager() *HandleManager {
 	hmOnce.Do(func() {
-		hm = &HandleManager{hmap: make(map[string]IHandler)}
+		hm = &HandleManager{hmap: make(map[byte]IMessage)}
 	})
 	return hm
 }
 
 type HandleManager struct {
-	hmap map[string]IHandler
+	hmap map[byte]IMessage
 }
 
-func (h *HandleManager) Registry(name string, handler IHandler) error {
+func (h *HandleManager) Registry(name byte, handler IMessage) error {
 	if h.Contain(name) {
 		return errors.New(fmt.Sprintf("%s existed", name))
 	}
@@ -30,11 +30,11 @@ func (h *HandleManager) Registry(name string, handler IHandler) error {
 	return nil
 }
 
-func (h *HandleManager) Contain(name string) bool {
+func (h *HandleManager) Contain(name byte) bool {
 	_, ok := h.hmap[name]
 	return ok
 }
 
-func (h *HandleManager) GetHandler(name string) IHandler {
+func (h *HandleManager) GetHandler(name byte) IMessage {
 	return h.hmap[name]
 }

@@ -28,9 +28,17 @@ func (b *bucket) updateNodes(nodes ... *Node) {
 
 // addNode add node to bucket, if bucket is full, will remove an old one
 func (b *bucket) addNodes(nodes ... *Node) {
+	// 把最活跃的放到最前面,然后移除最不活跃的
+	txn := cfg.Db.NewTransaction(true)
+	defer txn.Discard()
+
 	for _, node := range nodes {
-		logger.Info("add node","node", node.String())
+		logger.Info("add node", "node", node.String())
 		b.peers.Add(node)
+		if err := txn.Set(append([]byte(cfg.NodesBackupKey), node.ID.Bytes()...), []byte(node.String())); err != nil {
+			logger.Error("set peer", "err", err)
+			return
+		}
 	}
 
 	b.peers.Sort(func(a, b interface{}) int { return int(b.(*Node).updateAt.Sub(a.(*Node).updateAt)) })
@@ -39,20 +47,19 @@ func (b *bucket) addNodes(nodes ... *Node) {
 		return
 	}
 
-	// 把最活跃的放到最前面,然后移除最不活跃的
-	if err := cfg.Db.Update(func(txn *badger.Txn) error {
-		for i := cfg.BucketSize; i < size; i++ {
-			val, e := b.peers.Get(i)
-			if !e {
-				continue
-			}
-			b.peers.Remove(i)
-			if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
-				return err
-			}
+	for i := cfg.BucketSize; i < size; i++ {
+		val, e := b.peers.Get(i)
+		if !e {
+			continue
 		}
-		return nil
-	}); err != nil {
+		b.peers.Remove(i)
+		if err := txn.Delete(append([]byte(cfg.NodesBackupKey), val.(*Node).ID.Bytes()...)); err != nil {
+			logger.Error("delete peer", "err", err)
+			return
+		}
+	}
+
+	if err := txn.Commit(nil); err != nil {
 		logger.Error("update peer", "err", err)
 	}
 }
