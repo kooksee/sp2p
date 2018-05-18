@@ -12,13 +12,12 @@ type kv struct {
 }
 
 type KVSetReq struct {
-	t byte
-	s string
 	kv
 }
 
-func (t *KVSetReq) T() byte        { return t.t }
-func (t *KVSetReq) String() string { return t.s }
+func (t *KVSetReq) T() byte          { return KVGetReqT }
+func (t *KVSetReq) String() string   { return KVSetReqS }
+func (t *KVSetReq) Create() IMessage { return &KVSetReq{} }
 func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(common.StringToHash(t.K))
 	if len(nodes) < 2 {
@@ -44,13 +43,12 @@ func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 }
 
 type KVGetReq struct {
-	t byte
-	s string
 	kv
 }
 
-func (t *KVGetReq) T() byte        { return t.t }
-func (t *KVGetReq) String() string { return t.s }
+func (t *KVGetReq) T() byte          { return KVGetReqT }
+func (t *KVGetReq) String() string   { return KVGetReqS }
+func (t *KVGetReq) Create() IMessage { return &KVGetReq{} }
 func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(common.StringToHash(t.K))
 	if len(nodes) < 2 {
@@ -91,13 +89,12 @@ func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 }
 
 type KVGetResp struct {
-	t byte
-	s string
 	kv
 }
 
-func (t *KVGetResp) T() byte        { return t.t }
-func (t *KVGetResp) String() string { return t.s }
+func (t *KVGetResp) T() byte          { return KVGetRespT }
+func (t *KVGetResp) String() string   { return KVGetRespS }
+func (t *KVGetResp) Create() IMessage { return &KVGetResp{} }
 func (t *KVGetResp) OnHandle(p *SP2p, msg *KMsg) {
 	if err := cfg.Db.Update(func(txn *badger.Txn) error {
 		v, err := json.Marshal(t.V)

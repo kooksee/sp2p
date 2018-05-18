@@ -1,11 +1,11 @@
 package sp2p
 
 import (
-	"bytes"
 	"io"
 	"io/ioutil"
 	"github.com/kataras/iris/core/errors"
 	"fmt"
+	"bytes"
 )
 
 type KMsg struct {
@@ -22,8 +22,7 @@ func (t *KMsg) DecodeFromConn(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	message = bytes.TrimSpace(message)
-	return json.Unmarshal(message, t)
+	return t.Decode(bytes.TrimSpace(message))
 }
 
 func (t *KMsg) Decode(msg []byte) error {
@@ -32,7 +31,7 @@ func (t *KMsg) Decode(msg []byte) error {
 		return errors.New(fmt.Sprintf("not existed"))
 	}
 
-	t.Data = hm.GetHandler(dt)
+	t.Data = hm.GetHandler(dt).Create()
 	return json.Unmarshal(msg[1:], t)
 }
 

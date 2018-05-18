@@ -8,6 +8,7 @@ type IHandler func(*SP2p, *KMsg)
 
 type IMessage interface {
 	T() byte
+	Create() IMessage
 	String() string
 	OnHandle(*SP2p, *KMsg)
 }
