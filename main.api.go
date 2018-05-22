@@ -1,6 +1,8 @@
 package sp2p
 
-import "github.com/kooksee/common"
+import (
+	"github.com/kooksee/common"
+)
 
 func (s *SP2p) Write(msg *KMsg) {
 	go s.writeTx(msg)
@@ -85,4 +87,22 @@ func (s *SP2p) FindN() {
 
 func (s *SP2p) FindNode(taddr string, n int) {
 	go s.findNode(taddr, n)
+}
+
+// 获得本地存储的value
+func (s *SP2p) GetValue(k []byte) ([]byte, error) {
+	return s.getValue(k)
+}
+
+func (s *SP2p) KVSetReq(req *KVSetReq) {
+	go s.kvSetReq(req)
+}
+func (s *SP2p) KVGetReq(req *KVGetReq) {
+	go s.kvGetReq(req)
+}
+func (s *SP2p) GKVSetReq(req *GKVSetReq) {
+	go s.gkvSetReq(req)
+}
+func (s *SP2p) GKVGetReq(req *GKVGetReq) {
+	go s.gkvGetReq(req)
 }

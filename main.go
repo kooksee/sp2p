@@ -182,6 +182,35 @@ func (s *SP2p) findN() {
 	}
 }
 
+func (s *SP2p) kvSetReq(req *KVSetReq) {
+	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+}
+func (s *SP2p) kvGetReq(req *KVGetReq) {
+	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+}
+func (s *SP2p) gkvSetReq(req *GKVSetReq) {
+	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+}
+func (s *SP2p) gkvGetReq(req *GKVGetReq) {
+	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+}
+
+// 获得本地存储的value
+func (s *SP2p) getValue(k []byte) (value []byte, err error) {
+	return value, cfg.Db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(k)
+		if err != nil {
+			return err
+		}
+		v, err := item.Value()
+		if err != nil {
+			return err
+		}
+		value = v
+		return nil
+	})
+}
+
 func (s *SP2p) accept() {
 	kb := NewKBuffer([]byte{'\n'})
 	for {
