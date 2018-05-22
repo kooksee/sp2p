@@ -29,8 +29,10 @@ func (b *bucket) updateNodes(nodes ... *Node) {
 // addNode add node to bucket, if bucket is full, will remove an old one
 func (b *bucket) addNodes(nodes ... *Node) {
 	// 把最活跃的放到最前面,然后移除最不活跃的
-	txn := cfg.Db.NewTransaction(true)
+	txn := GetDb().NewTransaction(true)
 	defer txn.Discard()
+
+	logger := GetLog()
 
 	for _, node := range nodes {
 		logger.Info("add node", "node", node.String())
@@ -78,7 +80,7 @@ func (b *bucket) Random() *Node {
 }
 
 func (b *bucket) deleteNodes(targets ... common.Hash) {
-	if err := cfg.Db.Update(func(txn *badger.Txn) error {
+	if err := GetDb().Update(func(txn *badger.Txn) error {
 		for _, node := range targets {
 			if a := b.peers.IndexOf(node); a != -1 {
 				val, bl := b.peers.Get(a)
@@ -86,17 +88,17 @@ func (b *bucket) deleteNodes(targets ... common.Hash) {
 					continue
 				}
 				if err := txn.Delete(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
-					logger.Error("deleteNodes error", "err", err)
+					GetLog().Error("deleteNodes error", "err", err)
 					continue
 				}
-				logger.Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
+				GetLog().Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
 				b.peers.Remove(a)
 			}
 		}
 
 		return nil
 	}); err != nil {
-		logger.Error("update peer", "err", err)
+		GetLog().Error("update peer", "err", err)
 	}
 }
 

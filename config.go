@@ -4,9 +4,14 @@ import (
 	"crypto/ecdsa"
 	"time"
 
-	"github.com/dgraph-io/badger"
 	"github.com/kooksee/common"
 	"net"
+	"github.com/dgraph-io/badger"
+	"github.com/kooksee/log"
+)
+
+var (
+	cfg *KConfig
 )
 
 type KConfig struct {
@@ -50,8 +55,6 @@ type KConfig struct {
 	Host string
 	Port int
 
-	Db *badger.DB
-
 	NodesBackupKey string
 
 	DELIMITER byte
@@ -65,15 +68,43 @@ type KConfig struct {
 	Version     string
 
 	AdvertiseAddr *net.UDPAddr
-	LogLevel      string
 
 	StoreAckNum int
 
 	uuidC chan string
+	db    *badger.DB
+	l     log.Logger
 }
 
-func DefaultKConfig() *KConfig {
-	return &KConfig{
+func (t *KConfig) InitLog(l log.Logger) {
+	t.l = l.New("package", "sp2p")
+}
+func (t *KConfig) InitDb(db *badger.DB) {
+	t.db = db
+}
+func GetLog() log.Logger {
+	if GetCfg().l == nil {
+		panic("please init log")
+	}
+	return GetCfg().l
+}
+
+func GetDb() *badger.DB {
+	if GetCfg().db == nil {
+		panic("please init db")
+	}
+	return GetCfg().db
+}
+
+func GetCfg() *KConfig {
+	if cfg == nil {
+		panic("please init kconfig")
+	}
+	return cfg
+}
+
+func InitKConfig() *KConfig {
+	cfg = &KConfig{
 		MaxBufLen:           1024 * 16,
 		NtpFailureThreshold: 32,
 		NtpWarningCooldown:  10 * time.Minute,
@@ -103,11 +134,11 @@ func DefaultKConfig() *KConfig {
 		MinNodeSize: 100,
 		Version:     "1.0.0",
 
-		ExportAddr:  nil,
-		LogLevel:    "info",
-		BucketSize:  16,
-		StoreAckNum: 2,
+		AdvertiseAddr: nil,
+		BucketSize:    16,
+		StoreAckNum:   2,
 
 		uuidC: make(chan string, 1000),
 	}
+	return cfg
 }

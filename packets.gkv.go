@@ -14,7 +14,7 @@ func (t *GKVSetReq) T() byte          { return GKVGetReqT }
 func (t *GKVSetReq) String() string   { return GKVSetReqS }
 func (t *GKVSetReq) Create() IMessage { return &GKVSetReq{} }
 func (t *GKVSetReq) OnHandle(p *SP2p, msg *KMsg) {
-	if err := cfg.Db.Update(func(txn *badger.Txn) error {
+	if err := GetDb().Update(func(txn *badger.Txn) error {
 		// 检查是否存在
 		item, _ := txn.Get(t.K)
 		if item != nil {
@@ -36,7 +36,7 @@ func (t *GKVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 		}
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		GetLog().Error(err.Error())
 	}
 }
 
@@ -46,7 +46,7 @@ func (t *GKVGetReq) T() byte          { return GKVGetReqT }
 func (t *GKVGetReq) String() string   { return GKVGetReqS }
 func (t *GKVGetReq) Create() IMessage { return &GKVGetReq{} }
 func (t *GKVGetReq) OnHandle(p *SP2p, msg *KMsg) {
-	if err := cfg.Db.View(func(txn *badger.Txn) error {
+	if err := GetDb().View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(t.K))
 		if err != nil {
 			return err
@@ -68,7 +68,7 @@ func (t *GKVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 		return nil
 
 	}); err != nil {
-		logger.Error(err.Error())
+		GetLog().Error(err.Error())
 
 		for _, node := range p.tab.FindRandomNodes(8) {
 			p.writeTx(&KMsg{
@@ -86,13 +86,13 @@ func (t *GKVGetResp) T() byte          { return GKVGetRespT }
 func (t *GKVGetResp) String() string   { return GKVGetRespS }
 func (t *GKVGetResp) Create() IMessage { return &GKVGetResp{} }
 func (t *GKVGetResp) OnHandle(p *SP2p, msg *KMsg) {
-	if err := cfg.Db.Update(func(txn *badger.Txn) error {
+	if err := GetDb().Update(func(txn *badger.Txn) error {
 		v, err := json.Marshal(t.V)
 		if err != nil {
 			return err
 		}
 		return txn.Set([]byte(t.K), v)
 	}); err != nil {
-		logger.Error(err.Error())
+		GetLog().Error(err.Error())
 	}
 }

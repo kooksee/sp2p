@@ -18,9 +18,9 @@ func NewSP2p(seeds []string) *SP2p {
 		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
 	}
 
-	if cfg.ExportAddr == nil {
-		cfg.ExportAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
-		logger.Error("请设置ExportAddr")
+	if cfg.AdvertiseAddr == nil {
+		cfg.AdvertiseAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
+		GetLog().Error("请设置ExportAddr")
 	}
 
 	conn, err := net.ListenUDP("udp", p2p.localAddr)
@@ -28,7 +28,7 @@ func NewSP2p(seeds []string) *SP2p {
 		panic(err.Error())
 	}
 	p2p.conn = conn
-	p2p.tab = newTable(PubkeyID(&cfg.PriV.PublicKey), cfg.ExportAddr)
+	p2p.tab = newTable(PubkeyID(&cfg.PriV.PublicKey), cfg.AdvertiseAddr)
 
 	go p2p.accept()
 	go p2p.loop()
@@ -59,7 +59,7 @@ func (s *SP2p) genUUID() {
 }
 
 func (s *SP2p) loadSeeds(seeds []string) error {
-	txn := cfg.Db.NewTransaction(true)
+	txn := GetDb().NewTransaction(true)
 	defer txn.Discard()
 
 	k := []byte(cfg.NodesBackupKey)
@@ -71,7 +71,7 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 
 		val, err := iter.Item().Value()
 		if err != nil {
-			logger.Error("loadSeeds", "err", err)
+			GetLog().Error("loadSeeds", "err", err)
 			continue
 		}
 
@@ -137,17 +137,17 @@ func (s *SP2p) write(msg *KMsg) {
 		msg.Version = cfg.Version
 	}
 	if msg.TAddr == "" {
-		logger.Error("target udp addr does not exist")
+		GetLog().Error("target udp addr does not exist")
 		return
 	}
 
 	addr, err := net.ResolveUDPAddr("udp", msg.TAddr)
 	if err != nil {
-		logger.Error("ResolveUDPAddr error", "err", err)
+		GetLog().Error("ResolveUDPAddr error", "err", err)
 		return
 	}
 	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
-		logger.Error("WriteToUDP error", "err", err)
+		GetLog().Error("WriteToUDP error", "err", err)
 		return
 	}
 }
@@ -190,7 +190,7 @@ func (s *SP2p) gkvGetReq(req *GKVGetReq) {
 
 // 获得本地存储的value
 func (s *SP2p) getValue(k []byte) (value []byte, err error) {
-	return value, cfg.Db.View(func(txn *badger.Txn) error {
+	return value, GetDb().View(func(txn *badger.Txn) error {
 		item, err := txn.Get(k)
 		if err != nil {
 			return err
@@ -210,8 +210,8 @@ func (s *SP2p) accept() {
 		buf := make([]byte, cfg.MaxBufLen)
 		n, addr, err := s.conn.ReadFromUDP(buf)
 		if err == nil {
-			logger.Debug("udp message", "addr", addr.String())
-			logger.Debug(string(buf))
+			GetLog().Debug("udp message", "addr", addr.String())
+			GetLog().Debug(string(buf))
 			messages := kb.Next(buf[:n])
 			if messages == nil {
 				continue
@@ -224,7 +224,7 @@ func (s *SP2p) accept() {
 
 				msg := &KMsg{}
 				if err := msg.Decode(m); err != nil {
-					logger.Error("tx msg decode error", "err", err, "method", "accept")
+					GetLog().Error("tx msg decode error", "err", err, "method", "accept")
 					continue
 				}
 				s.txRC <- msg
@@ -232,13 +232,13 @@ func (s *SP2p) accept() {
 			continue
 		}
 		if strings.Contains(err.Error(), "timeout") {
-			logger.Error("timeout", "err", err)
+			GetLog().Error("timeout", "err", err)
 			time.Sleep(time.Second * 2)
 		} else if err == io.EOF {
-			logger.Error("udp read eof ", "err", err)
+			GetLog().Error("udp read eof ", "err", err)
 			break
 		} else if err != nil {
-			logger.Error("udp read error ", "err", err)
+			GetLog().Error("udp read error ", "err", err)
 			time.Sleep(time.Second * 2)
 		}
 	}

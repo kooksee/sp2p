@@ -24,14 +24,14 @@ func (t *KVSetReq) Create() IMessage { return &KVSetReq{} }
 func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(common.BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
-		if err := cfg.Db.Update(func(txn *badger.Txn) error {
+		if err := GetDb().Update(func(txn *badger.Txn) error {
 			v, err := json.Marshal(t.V)
 			if err != nil {
 				return err
 			}
 			return txn.Set([]byte(t.K), v)
 		}); err != nil {
-			logger.Error("kvset error", "err", err)
+			GetLog().Error("kvset error", "err", err)
 		}
 		return
 	}
@@ -49,7 +49,7 @@ func (t *KVGetReq) Create() IMessage { return &KVGetReq{} }
 func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(common.BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
-		if err := cfg.Db.View(func(txn *badger.Txn) error {
+		if err := GetDb().View(func(txn *badger.Txn) error {
 			item, err := txn.Get([]byte(t.K))
 			if err != nil {
 				return err
@@ -68,7 +68,7 @@ func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 			return nil
 
 		}); err != nil {
-			logger.Error(err.Error())
+			GetLog().Error(err.Error())
 		}
 		return
 	}
@@ -84,13 +84,13 @@ func (t *KVGetResp) T() byte          { return KVGetRespT }
 func (t *KVGetResp) String() string   { return KVGetRespS }
 func (t *KVGetResp) Create() IMessage { return &KVGetResp{} }
 func (t *KVGetResp) OnHandle(p *SP2p, msg *KMsg) {
-	if err := cfg.Db.Update(func(txn *badger.Txn) error {
+	if err := GetDb().Update(func(txn *badger.Txn) error {
 		v, err := json.Marshal(t.V)
 		if err != nil {
 			return err
 		}
 		return txn.Set([]byte(t.K), v)
 	}); err != nil {
-		logger.Error(err.Error())
+		GetLog().Error(err.Error())
 	}
 }
