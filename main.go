@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"github.com/dgraph-io/badger"
 	"encoding/hex"
+	"github.com/satori/go.uuid"
 )
 
 func NewSP2p(seeds []string) *SP2p {
@@ -31,6 +32,7 @@ func NewSP2p(seeds []string) *SP2p {
 
 	go p2p.accept()
 	go p2p.loop()
+	go p2p.genUUID()
 
 	if err := p2p.loadSeeds(seeds); err != nil {
 		panic(err.Error())
@@ -44,6 +46,16 @@ type SP2p struct {
 	txWC      chan *KMsg
 	conn      *net.UDPConn
 	localAddr *net.UDPAddr
+}
+
+// 生成uuid的队列
+func (s *SP2p) genUUID() {
+	for {
+		uid, err := uuid.NewV4()
+		if err == nil {
+			cfg.uuidC <- hex.EncodeToString(uid.Bytes())
+		}
+	}
 }
 
 func (s *SP2p) loadSeeds(seeds []string) error {
@@ -119,7 +131,7 @@ func (s *SP2p) write(msg *KMsg) {
 		msg.FAddr = s.localAddr.String()
 	}
 	if msg.ID == "" {
-		msg.ID = hex.EncodeToString(UUID())
+		msg.ID = <-cfg.uuidC
 	}
 	if msg.Version == "" {
 		msg.Version = cfg.Version
@@ -205,6 +217,7 @@ func (s *SP2p) accept() {
 			break
 		} else if err != nil {
 			logger.Error("udp read error ", "err", err)
+			time.Sleep(time.Second * 2)
 		}
 	}
 }

@@ -25,12 +25,9 @@ type KConfig struct {
 	// Allowed clock drift before warning user
 	DriftThreshold time.Duration
 
-	// 节点列表备份时间
-	NodeBackupTick *time.Ticker
-	PingTick       *time.Ticker
-	FindNodeTick   *time.Ticker
-	PingKcpTick    *time.Ticker
-	NtpTick        *time.Ticker
+	PingTick     *time.Ticker
+	FindNodeTick *time.Ticker
+	NtpTick      *time.Ticker
 
 	// Kademlia concurrency factor
 	Alpha int
@@ -64,10 +61,12 @@ type KConfig struct {
 	MinNodeSize int
 	Version     string
 
-	ExportAddr  *net.UDPAddr
-	LogLevel    string
+	ExportAddr *net.UDPAddr
+	LogLevel   string
 
 	StoreAckNum int
+
+	uuidC chan string
 }
 
 func DefaultKConfig() *KConfig {
@@ -92,11 +91,9 @@ func DefaultKConfig() *KConfig {
 		NodesBackupKey: "nbk:",
 		DELIMITER:      '\n',
 
-		NodeBackupTick: time.NewTicker(10 * time.Minute),
-		PingTick:       time.NewTicker(10 * time.Minute),
-		FindNodeTick:   time.NewTicker(1 * time.Hour),
-		PingKcpTick:    time.NewTicker(2 * time.Second),
-		NtpTick:        time.NewTicker(10 * time.Minute),
+		PingTick:     time.NewTicker(10 * time.Minute),
+		FindNodeTick: time.NewTicker(1 * time.Hour),
+		NtpTick:      time.NewTicker(10 * time.Minute),
 
 		MaxNodeSize: 2000,
 		MinNodeSize: 100,
@@ -106,5 +103,7 @@ func DefaultKConfig() *KConfig {
 		LogLevel:    "info",
 		BucketSize:  16,
 		StoreAckNum: 2,
+
+		uuidC: make(chan string, 1000),
 	}
 }

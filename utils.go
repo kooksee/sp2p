@@ -11,7 +11,6 @@ import (
 	"github.com/kooksee/common"
 	"github.com/kooksee/crypt"
 	"github.com/kooksee/crypt/secp256k1"
-	"github.com/satori/go.uuid"
 )
 
 // recoverNodeID computes the public key used to sign the
@@ -44,16 +43,6 @@ func distCmp(target, a, b common.Hash) int {
 		}
 	}
 	return 0
-}
-
-func UUID() []byte {
-	for {
-		uid, err := uuid.NewV4()
-		if err == nil {
-			return uid.Bytes()
-		}
-	}
-	return nil
 }
 
 func expired(ts int64) bool {

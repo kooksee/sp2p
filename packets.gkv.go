@@ -82,9 +82,9 @@ func (t *GKVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 
 type GKVGetResp struct{ kv }
 
-func (t *GKVGetResp) T() byte          { return KVGetRespT }
-func (t *GKVGetResp) String() string   { return KVGetRespS }
-func (t *GKVGetResp) Create() IMessage { return &KVGetResp{} }
+func (t *GKVGetResp) T() byte          { return GKVGetRespT }
+func (t *GKVGetResp) String() string   { return GKVGetRespS }
+func (t *GKVGetResp) Create() IMessage { return &GKVGetResp{} }
 func (t *GKVGetResp) OnHandle(p *SP2p, msg *KMsg) {
 	if err := cfg.Db.Update(func(txn *badger.Txn) error {
 		v, err := json.Marshal(t.V)

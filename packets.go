@@ -20,11 +20,11 @@ const (
 	KVGetRespS = "kv get resp"
 
 	GKVSetReqT = byte(0x7)
-	GKVSetReqS = "kv set req"
+	GKVSetReqS = "gossip kv set req"
 
 	GKVGetReqT = byte(0x8)
-	GKVGetReqS = "kv get req"
+	GKVGetReqS = "gossip kv get req"
 
 	GKVGetRespT = byte(0x9)
-	GKVGetRespS = "kv get resp"
+	GKVGetRespS = "gossip kv get resp"
 )
