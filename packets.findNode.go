@@ -1,11 +1,11 @@
 package sp2p
 
 type FindNodeReq struct {
-	N int `json:"k,omitempty"`
+	N int `json:"n,omitempty"`
 }
 
-func (t *FindNodeReq) T() byte              { return FindNodeReqT }
-func (t *FindNodeReq) String() string       { return FindNodeReqS }
+func (t *FindNodeReq) T() byte          { return FindNodeReqT }
+func (t *FindNodeReq) String() string   { return FindNodeReqS }
 func (t *FindNodeReq) Create() IMessage { return &FindNodeReq{} }
 func (t *FindNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 	node, err := NodeFromKMsg(msg)
@@ -19,18 +19,15 @@ func (t *FindNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 	for _, n := range p.tab.FindMinDisNodes(node.sha, t.N) {
 		ns = append(ns, n.String())
 	}
-	p.Write(&KMsg{
-		TAddr: msg.FAddr,
-		Data:  &FindNodeResp{Nodes: ns},
-	})
+	p.Write(&KMsg{TAddr: msg.FAddr, Data: &FindNodeResp{Nodes: ns}})
 }
 
 type FindNodeResp struct {
-	Nodes []string `json:"k,omitempty"`
+	Nodes []string `json:"nodes,omitempty"`
 }
 
-func (t *FindNodeResp) T() byte               { return FindNodeRespT }
-func (t *FindNodeResp) String() string        { return FindNodeRespS }
+func (t *FindNodeResp) T() byte          { return FindNodeRespT }
+func (t *FindNodeResp) String() string   { return FindNodeRespS }
 func (t *FindNodeResp) Create() IMessage { return &FindNodeResp{} }
 func (t *FindNodeResp) OnHandle(p *SP2p, msg *KMsg) {
 	for _, n := range t.Nodes {
@@ -39,6 +36,6 @@ func (t *FindNodeResp) OnHandle(p *SP2p, msg *KMsg) {
 			logger.Error("parse node error", "err", err)
 			continue
 		}
-		p.tab.AddNode(node)
+		p.tab.UpdateNode(node)
 	}
 }
