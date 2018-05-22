@@ -38,7 +38,7 @@ type KConfig struct {
 	NodeResponseNumber int
 	// 节点广播的数量
 	NodeBroadcastNumber int
-	// 节点分区的数量
+	// 节点分区存储的数量
 	NodePartitionNumber int
 
 	// 节点ID长度
@@ -58,12 +58,16 @@ type KConfig struct {
 
 	PriV *ecdsa.PrivateKey
 
+	BucketSize int
+
 	MaxNodeSize int
 	MinNodeSize int
 	Version     string
 
-	ExportAddr *net.UDPAddr
-	LogLevel   string
+	ExportAddr  *net.UDPAddr
+	LogLevel    string
+
+	StoreAckNum int
 }
 
 func DefaultKConfig() *KConfig {
@@ -98,7 +102,9 @@ func DefaultKConfig() *KConfig {
 		MinNodeSize: 100,
 		Version:     "1.0.0",
 
-		ExportAddr: nil,
-		LogLevel:   "info",
+		ExportAddr:  nil,
+		LogLevel:    "info",
+		BucketSize:  16,
+		StoreAckNum: 2,
 	}
 }

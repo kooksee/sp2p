@@ -93,23 +93,9 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 	return txn.Commit(nil)
 }
 
-func (s *SP2p) dumpSeeds() {
-	cfg.Db.Update(func(txn *badger.Txn) error {
-		for _, n := range s.tab.GetAllNodes() {
-			if err := txn.Set(NodesBackupKey(n.ID.Bytes()), []byte(n.String())); err != nil {
-				logger.Error("dumpSeeds", "err", err)
-				continue
-			}
-		}
-		return nil
-	})
-}
-
 func (s *SP2p) loop() {
 	for {
 		select {
-		case <-cfg.NodeBackupTick.C:
-			go s.dumpSeeds()
 		case <-cfg.FindNodeTick.C:
 			go s.findN()
 		case <-cfg.PingTick.C:
@@ -124,7 +110,7 @@ func (s *SP2p) loop() {
 	}
 }
 
-func (s *SP2p) Write(msg *KMsg) {
+func (s *SP2p) writeTx(msg *KMsg) {
 	s.txWC <- msg
 }
 
@@ -152,10 +138,6 @@ func (s *SP2p) write(msg *KMsg) {
 		logger.Error("WriteToUDP error", "err", err)
 		return
 	}
-}
-
-func (s *SP2p) GetTable() *Table {
-	return s.tab
 }
 
 func (s *SP2p) pingNode(taddr string) {
