@@ -137,7 +137,7 @@ func (s *SP2p) write(msg *KMsg) {
 		msg.Version = cfg.Version
 	}
 	if msg.TAddr == "" {
-		logger.Error("目标地址不存在")
+		logger.Error("target udp addr does not exist")
 		return
 	}
 
@@ -153,24 +153,17 @@ func (s *SP2p) write(msg *KMsg) {
 }
 
 func (s *SP2p) pingNode(taddr string) {
-	s.Write(&KMsg{
-		TAddr: taddr,
-		FID:   s.tab.selfNode.ID.String(),
-		Data:  &PingReq{},
-	})
+	s.Write(&KMsg{TAddr: taddr, FID: s.tab.selfNode.ID.String(), Data: &PingReq{}})
 }
+
 func (s *SP2p) pingN() {
-	for _, n := range s.tab.FindRandomNodes(20) {
+	for _, n := range s.tab.FindRandomNodes(cfg.PingNodeNum) {
 		s.pingNode(n.addr().String())
 	}
 }
 
 func (s *SP2p) findNode(taddr string, n int) {
-	s.Write(&KMsg{
-		TAddr: taddr,
-		Data:  &FindNodeReq{N: n},
-		FID:   s.tab.selfNode.ID.String(),
-	})
+	s.Write(&KMsg{TAddr: taddr, Data: &FindNodeReq{N: n}, FID: s.tab.selfNode.ID.String()})
 }
 
 func (s *SP2p) findN() {
@@ -178,7 +171,7 @@ func (s *SP2p) findN() {
 		if b == nil || b.size() == 0 {
 			continue
 		}
-		s.findNode(b.Random().addr().String(), 8)
+		s.findNode(b.Random().addr().String(), cfg.FindNodeNUm)
 	}
 }
 

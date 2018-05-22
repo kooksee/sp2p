@@ -37,11 +37,7 @@ func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	}
 
 	for _, node := range nodes {
-		p.writeTx(&KMsg{
-			FAddr: msg.FAddr,
-			Data:  msg.Data,
-			TAddr: node.Addr().String(),
-		})
+		p.writeTx(&KMsg{FAddr: msg.FAddr, Data: msg.Data, TAddr: node.Addr().String()})
 	}
 }
 

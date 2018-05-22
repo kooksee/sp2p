@@ -38,6 +38,9 @@ type KConfig struct {
 	// 节点分区存储的数量
 	NodePartitionNumber int
 
+	PingNodeNum int
+	FindNodeNUm int
+
 	// 节点ID长度
 	HashBits int
 
@@ -61,8 +64,8 @@ type KConfig struct {
 	MinNodeSize int
 	Version     string
 
-	ExportAddr *net.UDPAddr
-	LogLevel   string
+	AdvertiseAddr *net.UDPAddr
+	LogLevel      string
 
 	StoreAckNum int
 
@@ -82,9 +85,10 @@ func DefaultKConfig() *KConfig {
 		NodeBroadcastNumber: 16,
 		NodePartitionNumber: 8,
 		HashBits:            len(common.Hash{}) * 8,
-
-		ConnReadTimeout:  5 * time.Second,
-		ConnWriteTimeout: 5 * time.Second,
+		PingNodeNum:         8,
+		FindNodeNUm:         20,
+		ConnReadTimeout:     5 * time.Second,
+		ConnWriteTimeout:    5 * time.Second,
 
 		Host:           "0.0.0.0",
 		Port:           8080,
