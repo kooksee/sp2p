@@ -3,11 +3,11 @@ package sp2p
 import (
 	"crypto/ecdsa"
 	"time"
+	"net"
 
 	"github.com/kooksee/common"
-	"net"
 	"github.com/dgraph-io/badger"
-	"github.com/kooksee/log"
+	log "github.com/inconshreveable/log15"
 )
 
 var (
@@ -79,9 +79,11 @@ type KConfig struct {
 func (t *KConfig) InitLog(l log.Logger) {
 	t.l = l.New("package", "sp2p")
 }
+
 func (t *KConfig) InitDb(db *badger.DB) {
 	t.db = db
 }
+
 func GetLog() log.Logger {
 	if GetCfg().l == nil {
 		panic("please init log")
@@ -103,7 +105,7 @@ func GetCfg() *KConfig {
 	return cfg
 }
 
-func InitKConfig() *KConfig {
+func DefaultKConfig() *KConfig {
 	cfg = &KConfig{
 		MaxBufLen:           1024 * 16,
 		NtpFailureThreshold: 32,
@@ -140,5 +142,6 @@ func InitKConfig() *KConfig {
 
 		uuidC: make(chan string, 1000),
 	}
+
 	return cfg
 }

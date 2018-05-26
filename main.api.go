@@ -97,12 +97,15 @@ func (s *SP2p) GetValue(k []byte) ([]byte, error) {
 func (s *SP2p) KVSetReq(req *KVSetReq) {
 	go s.kvSetReq(req)
 }
+
 func (s *SP2p) KVGetReq(req *KVGetReq) {
 	go s.kvGetReq(req)
 }
+
 func (s *SP2p) GKVSetReq(req *GKVSetReq) {
 	go s.gkvSetReq(req)
 }
+
 func (s *SP2p) GKVGetReq(req *GKVGetReq) {
 	go s.gkvGetReq(req)
 }

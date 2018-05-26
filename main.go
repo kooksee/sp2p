@@ -178,12 +178,15 @@ func (s *SP2p) findN() {
 func (s *SP2p) kvSetReq(req *KVSetReq) {
 	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
 }
+
 func (s *SP2p) kvGetReq(req *KVGetReq) {
 	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
 }
+
 func (s *SP2p) gkvSetReq(req *GKVSetReq) {
 	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
 }
+
 func (s *SP2p) gkvGetReq(req *GKVGetReq) {
 	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
 }
