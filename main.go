@@ -11,7 +11,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func NewSP2p(seeds []string) *SP2p {
+func NewSP2p() *SP2p {
 	p2p := &SP2p{
 		txRC:      make(chan *KMsg, 2000),
 		txWC:      make(chan *KMsg, 2000),
@@ -25,17 +25,18 @@ func NewSP2p(seeds []string) *SP2p {
 
 	conn, err := net.ListenUDP("udp", p2p.localAddr)
 	if err != nil {
-		panic(err.Error())
+		panic(Errs(Fmt("udp %s listen error", p2p.localAddr), err.Error()))
 	}
 	p2p.conn = conn
-	p2p.tab = newTable(PubkeyID(&cfg.PriV.PublicKey), cfg.AdvertiseAddr)
+	nodeId := MustHexID(If(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
+	p2p.tab = newTable(nodeId, cfg.AdvertiseAddr)
 
 	go p2p.accept()
 	go p2p.loop()
 	go p2p.genUUID()
 
-	if err := p2p.loadSeeds(seeds); err != nil {
-		panic(err.Error())
+	if err := p2p.loadSeeds(cfg.Seeds); err != nil {
+		panic(Errs("load seeds error", err.Error()))
 	}
 	return p2p
 }
@@ -46,6 +47,7 @@ type SP2p struct {
 	txWC      chan *KMsg
 	conn      *net.UDPConn
 	localAddr *net.UDPAddr
+	laddr     string
 }
 
 // 生成uuid的队列
@@ -56,6 +58,13 @@ func (s *SP2p) genUUID() {
 			cfg.uuidC <- hex.EncodeToString(uid.Bytes())
 		}
 	}
+}
+
+func (s *SP2p) GetAddr() string {
+	if s.laddr == "" {
+		s.laddr = s.localAddr.String()
+	}
+	return s.laddr
 }
 
 func (s *SP2p) loadSeeds(seeds []string) error {
@@ -71,7 +80,7 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 
 		val, err := iter.Item().Value()
 		if err != nil {
-			GetLog().Error("loadSeeds", "err", err)
+			GetLog().Error("loadSeeds error", "err", err)
 			continue
 		}
 
@@ -84,7 +93,7 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 		}
 		n := MustParseNode(rn)
 		s.tab.AddNode(n)
-		go s.pingNode(n.Addr().String())
+		go s.pingNode(n.AddrString())
 	}
 
 	// 节点启动的时候如果发现节点数量少,就去请求其他节点
@@ -92,13 +101,13 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 		// 节点太少的情况下，就去所有的节点去请求数据
 		for _, b := range s.tab.buckets {
 			b.peers.Each(func(index int, value interface{}) {
-				go s.findNode(value.(*Node).Addr().String(), 8)
+				go s.findNode(value.(*Node).AddrString(), 8)
 			})
 		}
 	} else if s.tab.Size() < cfg.MaxNodeSize {
 		// 每一个域选取一个节点
 		for _, b := range s.tab.buckets {
-			go s.findNode(b.Random().Addr().String(), 8)
+			go s.findNode(b.Random().AddrString(), 8)
 		}
 	}
 
@@ -128,7 +137,7 @@ func (s *SP2p) writeTx(msg *KMsg) {
 
 func (s *SP2p) write(msg *KMsg) {
 	if msg.FAddr == "" {
-		msg.FAddr = s.localAddr.String()
+		msg.FAddr = s.GetAddr()
 	}
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
@@ -146,6 +155,7 @@ func (s *SP2p) write(msg *KMsg) {
 		GetLog().Error("ResolveUDPAddr error", "err", err)
 		return
 	}
+
 	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
 		GetLog().Error("WriteToUDP error", "err", err)
 		return
@@ -153,17 +163,17 @@ func (s *SP2p) write(msg *KMsg) {
 }
 
 func (s *SP2p) pingNode(taddr string) {
-	s.Write(&KMsg{TAddr: taddr, FID: s.tab.selfNode.ID.String(), Data: &PingReq{}})
+	s.Write(&KMsg{TAddr: taddr, FID: s.tab.selfNode.ID.ToHex(), Data: &PingReq{}})
 }
 
 func (s *SP2p) pingN() {
 	for _, n := range s.tab.FindRandomNodes(cfg.PingNodeNum) {
-		s.pingNode(n.Addr().String())
+		s.pingNode(n.AddrString())
 	}
 }
 
 func (s *SP2p) findNode(taddr string, n int) {
-	s.Write(&KMsg{TAddr: taddr, Data: &FindNodeReq{N: n}, FID: s.tab.selfNode.ID.String()})
+	s.Write(&KMsg{TAddr: taddr, Data: &FindNodeReq{N: n}, FID: s.tab.selfNode.ID.ToHex()})
 }
 
 func (s *SP2p) findN() {
@@ -171,24 +181,24 @@ func (s *SP2p) findN() {
 		if b == nil || b.size() == 0 {
 			continue
 		}
-		s.findNode(b.Random().Addr().String(), cfg.FindNodeNUm)
+		s.findNode(b.Random().AddrString(), cfg.FindNodeNUm)
 	}
 }
 
 func (s *SP2p) kvSetReq(req *KVSetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
 }
 
 func (s *SP2p) kvGetReq(req *KVGetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
 }
 
 func (s *SP2p) gkvSetReq(req *GKVSetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
 }
 
 func (s *SP2p) gkvGetReq(req *GKVGetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.localAddr.String()})
+	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
 }
 
 // 获得本地存储的value

@@ -1,6 +1,5 @@
 package sp2p
 
-
 func (s *SP2p) Write(msg *KMsg) {
 	go s.writeTx(msg)
 }

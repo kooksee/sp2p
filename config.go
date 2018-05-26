@@ -1,12 +1,10 @@
 package sp2p
 
 import (
-	"crypto/ecdsa"
 	"time"
-	"net"
-
 	"github.com/dgraph-io/badger"
 	log "github.com/inconshreveable/log15"
+	"net"
 )
 
 var (
@@ -51,14 +49,9 @@ type KConfig struct {
 	ConnReadTimeout  time.Duration
 	ConnWriteTimeout time.Duration
 
-	Host string
-	Port int
-
 	NodesBackupKey string
 
 	DELIMITER byte
-
-	PriV *ecdsa.PrivateKey
 
 	BucketSize int
 
@@ -66,9 +59,14 @@ type KConfig struct {
 	MinNodeSize int
 	Version     string
 
-	AdvertiseAddr *net.UDPAddr
-
 	StoreAckNum int
+
+	Host          string
+	Port          int
+	AdvertiseAddr *net.UDPAddr
+	NodeId        string
+
+	Seeds []string
 
 	uuidC chan string
 	db    *badger.DB

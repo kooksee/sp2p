@@ -1,11 +1,11 @@
 package sp2p
 
 import (
+	"encoding/hex"
 	"time"
 
 	"github.com/dgraph-io/badger"
 	"github.com/emirpasic/gods/lists/arraylist"
-	"encoding/hex"
 )
 
 type bucket struct {

@@ -19,6 +19,7 @@ type Node struct {
 
 	// Time when the node was added to the table.
 	updateAt time.Time
+	addr     string
 }
 
 // NewNode creates a new node. It is mostly meant to be used for
@@ -37,6 +38,13 @@ func NewNode(id Hash, ip net.IP, udpPort uint16) *Node {
 
 func (n *Node) Addr() *net.UDPAddr {
 	return &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
+}
+
+func (n *Node) AddrString() string {
+	if n.addr == "" {
+		n.addr = n.Addr().String()
+	}
+	return n.addr
 }
 
 // Incomplete returns true for nodes with no IP address.
