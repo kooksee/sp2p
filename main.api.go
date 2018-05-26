@@ -33,7 +33,7 @@ func (s *SP2p) UpdateNode(rawUrl string) error {
 	return nil
 }
 func (s *SP2p) DeleteNode(id string) {
-	s.tab.DeleteNode(common.StringToHash(id))
+	s.tab.DeleteNode(StringToHash(id))
 }
 
 func (s *SP2p) AddNode(rawUrl string) error {

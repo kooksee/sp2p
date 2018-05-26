@@ -4,11 +4,6 @@ import (
 	"fmt"
 	"encoding/hex"
 	"strings"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"math/big"
-	"github.com/kooksee/crypt"
-	"errors"
 )
 
 const NodeIDBits = 512
@@ -67,7 +62,7 @@ func BytesID(b []byte) (NodeID, error) {
 func MustBytesID(b []byte) NodeID {
 	id, err := BytesID(b)
 	if err != nil {
-		panic(err)
+		panic(Errs("check node id error", err.Error()))
 	}
 	return id
 }
@@ -91,33 +86,9 @@ func HexID(in string) (NodeID, error) {
 func MustHexID(in string) NodeID {
 	id, err := HexID(in)
 	if err != nil {
-		panic(err)
+		panic(Errs("check nodeid error", err.Error()))
 	}
 	return id
-}
-
-// PubkeyID returns a marshaled representation of the given public key.
-func PubkeyID(pub *ecdsa.PublicKey) NodeID {
-	var id NodeID
-	pbytes := elliptic.Marshal(pub.Curve, pub.X, pub.Y)
-	if len(pbytes)-1 != len(id) {
-		panic(fmt.Errorf("need %d bit pubkey, got %d bits", (len(id)+1)*8, len(pbytes)))
-	}
-	copy(id[:], pbytes[1:])
-	return id
-}
-
-// Pubkey returns the public key represented by the node ID.
-// It returns an error if the ID is not a point on the curve.
-func (id NodeID) Pubkey() (*ecdsa.PublicKey, error) {
-	p := &ecdsa.PublicKey{Curve: crypto.S256(), X: new(big.Int), Y: new(big.Int)}
-	half := len(id) / 2
-	p.X.SetBytes(id[:half])
-	p.Y.SetBytes(id[half:])
-	if !p.Curve.IsOnCurve(p.X, p.Y) {
-		return nil, errors.New("id is invalid secp256k1 curve point")
-	}
-	return p, nil
 }
 
 // table of leading zero counts for bytes [0..255]
@@ -154,4 +125,8 @@ var lzcount = [256]int{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
+}
+
+func GenNodeID() NodeID {
+	return MustBytesID(RandBytes(NodeIDBits))
 }

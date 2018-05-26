@@ -8,9 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"time"
-
-	"github.com/kooksee/common"
-	"github.com/kooksee/crypt"
 )
 
 // Node represents a host on the network.
@@ -20,13 +17,7 @@ type Node struct {
 	UDP uint16 // port numbers
 	ID  NodeID // the node's public key
 
-	// This is a cached copy of sha3(ID) which is used for node
-	// distance calculations. This is part of Node in order to make it
-	// possible to write tests that need a node at a certain distance.
-	// In those tests, the content of sha will not actually correspond
-	// with ID.
-	sha common.Hash
-
+	sha Hash
 	// Time when the node was added to the table.
 	updateAt time.Time
 }
@@ -41,17 +32,12 @@ func NewNode(id NodeID, ip net.IP, udpPort uint16) *Node {
 		IP:       ip,
 		UDP:      udpPort,
 		ID:       id,
-		sha:      crypto.Keccak256Hash(id[:]),
 		updateAt: time.Now(),
 	}
 }
 
-func (n *Node) addr() *net.UDPAddr {
-	return &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
-}
-
 func (n *Node) Addr() *net.UDPAddr {
-	return n.addr()
+	return &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
 }
 
 // Incomplete returns true for nodes with no IP address.
@@ -71,8 +57,8 @@ func (n *Node) validateComplete() error {
 	if n.IP.IsMulticast() || n.IP.IsUnspecified() {
 		return errors.New("invalid IP (multicast/unspecified)")
 	}
-	_, err := n.ID.Pubkey() // validate the key (on curve, etc.)
-	return err
+
+	return nil
 }
 
 // The string representation of a Node is a URL.
@@ -80,39 +66,17 @@ func (n *Node) validateComplete() error {
 func (n *Node) String() string {
 	u := url.URL{Scheme: "enode"}
 	if n.Incomplete() {
-		u.Host = fmt.Sprintf("%x", n.ID[:])
+		u.Host = Fmt("%x", n.ID[:])
 	} else {
 		//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
-		u.User = url.User(fmt.Sprintf("%x", n.ID[:]))
-		u.Host = n.addr().String()
+		u.User = url.User(Fmt("%x", n.ID[:]))
+		u.Host = n.Addr().String()
 	}
 	return u.String()
 }
 
 var incompleteNodeURL = regexp.MustCompile("(?i)^(?:enode://)?([0-9a-f]+)$")
 
-// ParseNode parses a node designator.
-//
-// There are two basic forms of node designators
-//   - incomplete nodes, which only have the public key (node ID)
-//   - complete nodes, which contain the public key and IP/Port information
-//
-// For incomplete nodes, the designator must look like one of these
-//
-//    enode://<hex node id>
-//    <hex node id>
-//
-// For complete nodes, the node ID is encoded in the username portion
-// of the URL, separated from the host by an @ sign. The hostname can
-// only be given as an IP address, DNS domain names are not allowed.
-// The port in the host name section is the TCP listening port. If the
-// TCP and UDP (discovery) ports differ, the UDP port is specified as
-// query parameter "discport".
-//
-// In the following example, the node URL describes
-// a node with IP address 10.3.58.6, TCP listening port 30303
-// and UDP discovery port 30301.
-//
 //    enode://<hex node id>@10.3.58.6:30303?discport=30301
 //    enode://<hex node id>@10.3.58.6:30303?discport=30301
 func ParseNode(rawurl string) (*Node, error) {
@@ -178,21 +142,7 @@ func parseComplete(rawurl string) (*Node, error) {
 func MustParseNode(rawUrl string) *Node {
 	n, err := ParseNode(rawUrl)
 	if err != nil {
-		panic("invalid node URL: " + err.Error())
+		panic(Errs("invalid node URL", err.Error()))
 	}
 	return n
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (n *Node) MarshalText() ([]byte, error) {
-	return []byte(n.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (n *Node) UnmarshalText(text []byte) error {
-	dec, err := ParseNode(string(text))
-	if err == nil {
-		*n = *dec
-	}
-	return err
 }

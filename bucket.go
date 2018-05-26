@@ -5,8 +5,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/emirpasic/gods/lists/arraylist"
-	"github.com/kooksee/common"
-	"github.com/kooksee/common/hexutil"
+	"encoding/hex"
 )
 
 type bucket struct {
@@ -79,7 +78,7 @@ func (b *bucket) Random() *Node {
 	return val.(*Node)
 }
 
-func (b *bucket) deleteNodes(targets ... common.Hash) {
+func (b *bucket) deleteNodes(targets ... Hash) {
 	if err := GetDb().Update(func(txn *badger.Txn) error {
 		for _, node := range targets {
 			if a := b.peers.IndexOf(node); a != -1 {
@@ -91,7 +90,7 @@ func (b *bucket) deleteNodes(targets ... common.Hash) {
 					GetLog().Error("deleteNodes error", "err", err)
 					continue
 				}
-				GetLog().Info("delete node: %s", hexutil.BytesToHex(node.Bytes()))
+				GetLog().Info("delete node: %s", hex.EncodeToString(node.Bytes()))
 				b.peers.Remove(a)
 			}
 		}

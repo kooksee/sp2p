@@ -3,7 +3,7 @@ package sp2p
 import (
 	"io"
 	"io/ioutil"
-	"github.com/kataras/iris/core/errors"
+	"errors"
 	"fmt"
 	"bytes"
 )

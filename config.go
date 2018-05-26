@@ -5,7 +5,6 @@ import (
 	"time"
 	"net"
 
-	"github.com/kooksee/common"
 	"github.com/dgraph-io/badger"
 	log "github.com/inconshreveable/log15"
 )
@@ -117,7 +116,7 @@ func DefaultKConfig() *KConfig {
 		NodeResponseNumber:  8,
 		NodeBroadcastNumber: 16,
 		NodePartitionNumber: 8,
-		HashBits:            len(common.Hash{}) * 8,
+		HashBits:            len(Hash{}) * 8,
 		PingNodeNum:         8,
 		FindNodeNUm:         20,
 		ConnReadTimeout:     5 * time.Second,
