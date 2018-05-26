@@ -6,7 +6,6 @@ package sp2p
 
 import (
 	"github.com/dgraph-io/badger"
-	"github.com/kooksee/common"
 )
 
 type kv struct {
@@ -22,7 +21,7 @@ func (t *KVSetReq) T() byte          { return KVGetReqT }
 func (t *KVSetReq) String() string   { return KVSetReqS }
 func (t *KVSetReq) Create() IMessage { return &KVSetReq{} }
 func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
-	nodes := p.GetTable().FindNodeWithTargetBySelf(common.BytesToHash(t.K))
+	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
 		if err := GetDb().Update(func(txn *badger.Txn) error {
 			v, err := json.Marshal(t.V)
@@ -47,7 +46,7 @@ func (t *KVGetReq) T() byte          { return KVGetReqT }
 func (t *KVGetReq) String() string   { return KVGetReqS }
 func (t *KVGetReq) Create() IMessage { return &KVGetReq{} }
 func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
-	nodes := p.GetTable().FindNodeWithTargetBySelf(common.BytesToHash(t.K))
+	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
 		if err := GetDb().View(func(txn *badger.Txn) error {
 			item, err := txn.Get([]byte(t.K))

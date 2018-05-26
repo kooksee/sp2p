@@ -16,7 +16,7 @@ func (t *FindNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 	go p.tab.UpdateNode(node)
 
 	ns := make([]string, 0)
-	for _, n := range p.tab.FindMinDisNodes(node.sha, t.N) {
+	for _, n := range p.tab.FindMinDisNodes(node.ID, t.N) {
 		ns = append(ns, n.String())
 	}
 	p.Write(&KMsg{TAddr: msg.FAddr, Data: &FindNodeResp{Nodes: ns}})

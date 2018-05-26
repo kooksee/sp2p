@@ -15,16 +15,15 @@ import (
 type Node struct {
 	IP  net.IP // len 4 for IPv4 or 16 for IPv6
 	UDP uint16 // port numbers
-	ID  NodeID // the node's public key
+	ID  Hash   // the node's public key
 
-	sha Hash
 	// Time when the node was added to the table.
 	updateAt time.Time
 }
 
 // NewNode creates a new node. It is mostly meant to be used for
 // testing purposes.
-func NewNode(id NodeID, ip net.IP, udpPort uint16) *Node {
+func NewNode(id Hash, ip net.IP, udpPort uint16) *Node {
 	if ipv4 := ip.To4(); ipv4 != nil {
 		ip = ipv4
 	}
@@ -92,7 +91,7 @@ func ParseNode(rawurl string) (*Node, error) {
 
 func parseComplete(rawurl string) (*Node, error) {
 	var (
-		id               NodeID
+		id               Hash
 		ip               net.IP
 		tcpPort, udpPort uint64
 	)

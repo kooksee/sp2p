@@ -84,7 +84,7 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 		}
 		n := MustParseNode(rn)
 		s.tab.AddNode(n)
-		go s.pingNode(n.addr().String())
+		go s.pingNode(n.Addr().String())
 	}
 
 	// 节点启动的时候如果发现节点数量少,就去请求其他节点
@@ -92,13 +92,13 @@ func (s *SP2p) loadSeeds(seeds []string) error {
 		// 节点太少的情况下，就去所有的节点去请求数据
 		for _, b := range s.tab.buckets {
 			b.peers.Each(func(index int, value interface{}) {
-				go s.findNode(value.(*Node).addr().String(), 8)
+				go s.findNode(value.(*Node).Addr().String(), 8)
 			})
 		}
 	} else if s.tab.Size() < cfg.MaxNodeSize {
 		// 每一个域选取一个节点
 		for _, b := range s.tab.buckets {
-			go s.findNode(b.Random().addr().String(), 8)
+			go s.findNode(b.Random().Addr().String(), 8)
 		}
 	}
 
@@ -158,7 +158,7 @@ func (s *SP2p) pingNode(taddr string) {
 
 func (s *SP2p) pingN() {
 	for _, n := range s.tab.FindRandomNodes(cfg.PingNodeNum) {
-		s.pingNode(n.addr().String())
+		s.pingNode(n.Addr().String())
 	}
 }
 
@@ -171,7 +171,7 @@ func (s *SP2p) findN() {
 		if b == nil || b.size() == 0 {
 			continue
 		}
-		s.findNode(b.Random().addr().String(), cfg.FindNodeNUm)
+		s.findNode(b.Random().Addr().String(), cfg.FindNodeNUm)
 	}
 }
 

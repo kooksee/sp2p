@@ -21,7 +21,7 @@ type Table struct {
 	selfNode *Node //info of local node
 }
 
-func newTable(id NodeID, addr *net.UDPAddr) *Table {
+func newTable(id Hash, addr *net.UDPAddr) *Table {
 
 	table := &Table{
 		selfNode: NewNode(id, addr.IP, uint16(addr.Port)),
