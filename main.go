@@ -7,28 +7,35 @@ import (
 	"io"
 	"bytes"
 	"github.com/dgraph-io/badger"
-	"encoding/hex"
 	"github.com/satori/go.uuid"
 )
 
 func NewSP2p() *SP2p {
+	logger := GetLog()
+
 	p2p := &SP2p{
-		txRC:      make(chan *KMsg, 2000),
-		txWC:      make(chan *KMsg, 2000),
+		txRC:      make(chan *KMsg, 10000),
+		txWC:      make(chan *KMsg, 10000),
 		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
 	}
 
 	if cfg.AdvertiseAddr == nil {
+		logger.Error("没有设置AdvertiseAddr")
 		cfg.AdvertiseAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
-		GetLog().Error("请设置ExportAddr")
+		logger.Warn("默认使用AdvertiseAddr", "addr", cfg.AdvertiseAddr.String())
 	}
 
+	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())
 	conn, err := net.ListenUDP("udp", p2p.localAddr)
 	if err != nil {
 		panic(Errs(Fmt("udp %s listen error", p2p.localAddr), err.Error()))
 	}
 	p2p.conn = conn
+
 	nodeId := MustHexID(If(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
+	logger.Debug("node id", "id", nodeId)
+
+	logger.Debug("create table", "table")
 	p2p.tab = newTable(nodeId, cfg.AdvertiseAddr)
 
 	go p2p.accept()
@@ -55,7 +62,7 @@ func (s *SP2p) genUUID() {
 	for {
 		uid, err := uuid.NewV4()
 		if err == nil {
-			cfg.uuidC <- hex.EncodeToString(uid.Bytes())
+			cfg.uuidC <- uid.String()
 		}
 	}
 }
@@ -219,12 +226,13 @@ func (s *SP2p) getValue(k []byte) (value []byte, err error) {
 
 func (s *SP2p) accept() {
 	kb := NewKBuffer([]byte{'\n'})
+	logger := GetLog()
 	for {
 		buf := make([]byte, cfg.MaxBufLen)
 		n, addr, err := s.conn.ReadFromUDP(buf)
 		if err == nil {
-			GetLog().Debug("udp message", "addr", addr.String())
-			GetLog().Debug(string(buf))
+			logger.Debug("udp message", "addr", addr.String())
+			logger.Debug(string(buf))
 			messages := kb.Next(buf[:n])
 			if messages == nil {
 				continue
@@ -237,22 +245,23 @@ func (s *SP2p) accept() {
 
 				msg := &KMsg{}
 				if err := msg.Decode(m); err != nil {
-					GetLog().Error("tx msg decode error", "err", err, "method", "accept")
+					GetLog().Error("tx msg decode error", "err", err, "method", "sp2p.accept")
 					continue
 				}
+
 				s.txRC <- msg
 			}
 			continue
 		}
+
 		if strings.Contains(err.Error(), "timeout") {
 			GetLog().Error("timeout", "err", err)
-			time.Sleep(time.Second * 2)
 		} else if err == io.EOF {
 			GetLog().Error("udp read eof ", "err", err)
-			break
 		} else if err != nil {
 			GetLog().Error("udp read error ", "err", err)
-			time.Sleep(time.Second * 2)
 		}
+
+		time.Sleep(time.Second * 2)
 	}
 }

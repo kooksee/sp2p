@@ -28,7 +28,7 @@ func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 			if err != nil {
 				return err
 			}
-			return txn.Set([]byte(t.K), v)
+			return txn.Set(KvKey(t.K), v)
 		}); err != nil {
 			GetLog().Error("kvset error", "err", err)
 		}
@@ -49,7 +49,7 @@ func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
 		if err := GetDb().View(func(txn *badger.Txn) error {
-			item, err := txn.Get([]byte(t.K))
+			item, err := txn.Get(KvKey(t.K))
 			if err != nil {
 				return err
 			}
@@ -88,7 +88,7 @@ func (t *KVGetResp) OnHandle(p *SP2p, msg *KMsg) {
 		if err != nil {
 			return err
 		}
-		return txn.Set([]byte(t.K), v)
+		return txn.Set(KvKey(t.K), v)
 	}); err != nil {
 		GetLog().Error(err.Error())
 	}

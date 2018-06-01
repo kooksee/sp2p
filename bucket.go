@@ -37,7 +37,7 @@ func (b *bucket) addNodes(nodes ... *Node) {
 		logger.Info("add node", "node", node.String())
 		b.peers.Add(node)
 		if err := txn.Set(NodesBackupKey(node.ID.Bytes()), []byte(node.String())); err != nil {
-			logger.Error("set peer error", "err", err)
+			logger.Error("add peer error", "err", err)
 			continue
 		}
 	}
@@ -74,6 +74,7 @@ func (b *bucket) Random() *Node {
 	if b.size() == 0 {
 		return nil
 	}
+
 	val, _ := b.peers.Get(int(randUint(uint32(b.size()))))
 	return val.(*Node)
 }

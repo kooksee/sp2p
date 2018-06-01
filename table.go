@@ -79,12 +79,6 @@ func (t *Table) FindRandomNodes(n int) []*Node {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	if n > NBuckets {
-		n = NBuckets
-	} else if n < 1 {
-		n = 5
-	}
-
 	nodes := make([]*Node, 0)
 	for _, b := range t.buckets {
 		b.peers.Each(func(_ int, value interface{}) {
@@ -92,7 +86,8 @@ func (t *Table) FindRandomNodes(n int) []*Node {
 		})
 	}
 
-	if len(nodes) < n {
+	n = If(n > NBuckets, NBuckets, 5).(int)
+	if len(nodes) < n+5 {
 		return nodes
 	}
 
@@ -131,15 +126,10 @@ func (t *Table) DeleteNode(target Hash) {
 }
 
 func (t *Table) FindMinDisNodes(target Hash, number int) []*Node {
-	if number > NBuckets {
-		number = NBuckets
-	} else if number < 1 {
-		number = 5
-	}
 
 	result := &nodesByDistance{
 		target:   target,
-		maxElems: number,
+		maxElems: If(number > NBuckets, NBuckets, 5).(int),
 		entries:  make([]*Node, 0),
 	}
 

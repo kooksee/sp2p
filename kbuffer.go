@@ -24,12 +24,20 @@ func (t *KBuffer) Next(b []byte) [][]byte {
 	}
 
 	t.buf = append(t.buf, b...)
-	if len(t.buf) > 0 {
-		d := bytes.Split(t.buf, t.delim)
-		if len(d) > 1 {
-			t.buf = d[len(d)-1]
-			return d[:len(d)-1]
-		}
+
+	if len(t.buf) < 1 {
+		return nil
 	}
-	return nil
+
+	if !bytes.Contains(t.buf, t.delim) {
+		return nil
+	}
+
+	d := bytes.Split(t.buf, t.delim)
+	if len(d) < 1 {
+		return nil
+	}
+
+	t.buf = d[len(d)-1]
+	return d[:len(d)-1]
 }

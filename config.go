@@ -67,6 +67,7 @@ type KConfig struct {
 	NodeId        string
 
 	Seeds []string
+	KvKey []byte
 
 	uuidC chan string
 	db    *badger.DB
@@ -137,7 +138,9 @@ func DefaultKConfig() *KConfig {
 		BucketSize:    16,
 		StoreAckNum:   2,
 
-		uuidC: make(chan string, 1000),
+		KvKey: []byte("kv:"),
+
+		uuidC: make(chan string, 10000),
 	}
 
 	return cfg

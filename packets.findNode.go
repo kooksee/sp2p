@@ -16,6 +16,11 @@ func (t *FindNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 	go p.tab.UpdateNode(node)
 
 	ns := make([]string, 0)
+
+	// 最多不能超过16
+	if t.N > 16 {
+		t.N = 16
+	}
 	for _, n := range p.tab.FindMinDisNodes(node.ID, t.N) {
 		ns = append(ns, n.String())
 	}

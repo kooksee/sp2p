@@ -18,8 +18,10 @@ type Node struct {
 	ID  Hash   // the node's public key
 
 	// Time when the node was added to the table.
-	updateAt time.Time
-	addr     string
+	updateAt   time.Time
+	addr       string
+	udpAddr    *net.UDPAddr
+	nodeString string
 }
 
 // NewNode creates a new node. It is mostly meant to be used for
@@ -37,7 +39,10 @@ func NewNode(id Hash, ip net.IP, udpPort uint16) *Node {
 }
 
 func (n *Node) Addr() *net.UDPAddr {
-	return &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
+	if n.udpAddr == nil {
+		n.udpAddr = &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
+	}
+	return n.udpAddr
 }
 
 func (n *Node) AddrString() string {
@@ -71,15 +76,19 @@ func (n *Node) validateComplete() error {
 // The string representation of a Node is a URL.
 // Please see ParseNode for a description of the format.
 func (n *Node) String() string {
-	u := url.URL{Scheme: "enode"}
-	if n.Incomplete() {
-		u.Host = Fmt("%x", n.ID[:])
-	} else {
-		//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
-		u.User = url.User(Fmt("%x", n.ID[:]))
-		u.Host = n.Addr().String()
+	if n.nodeString == "" {
+		u := url.URL{Scheme: "enode"}
+		if n.Incomplete() {
+			u.Host = Fmt("%x", n.ID[:])
+		} else {
+			//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
+			u.User = url.User(Fmt("%x", n.ID[:]))
+			u.Host = n.AddrString()
+		}
+		n.nodeString = u.String()
 	}
-	return u.String()
+
+	return n.nodeString
 }
 
 var incompleteNodeURL = regexp.MustCompile("(?i)^(?:enode://)?([0-9a-f]+)$")
