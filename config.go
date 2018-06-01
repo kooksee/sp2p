@@ -1,12 +1,14 @@
 package sp2p
 
 import (
-	"crypto/ecdsa"
 	"time"
-
 	"github.com/dgraph-io/badger"
-	"github.com/kooksee/common"
+	log "github.com/inconshreveable/log15"
 	"net"
+)
+
+var (
+	cfg *KConfig
 )
 
 type KConfig struct {
@@ -47,16 +49,9 @@ type KConfig struct {
 	ConnReadTimeout  time.Duration
 	ConnWriteTimeout time.Duration
 
-	Host string
-	Port int
-
-	Db *badger.DB
-
 	NodesBackupKey string
 
 	DELIMITER byte
-
-	PriV *ecdsa.PrivateKey
 
 	BucketSize int
 
@@ -64,16 +59,52 @@ type KConfig struct {
 	MinNodeSize int
 	Version     string
 
-	AdvertiseAddr *net.UDPAddr
-	LogLevel      string
-
 	StoreAckNum int
 
+	Host          string
+	Port          int
+	AdvertiseAddr *net.UDPAddr
+	NodeId        string
+
+	Seeds []string
+	KvKey []byte
+
 	uuidC chan string
+	db    *badger.DB
+	l     log.Logger
+}
+
+func (t *KConfig) InitLog(l log.Logger) {
+	t.l = l.New("package", "sp2p")
+}
+
+func (t *KConfig) InitDb(db *badger.DB) {
+	t.db = db
+}
+
+func GetLog() log.Logger {
+	if GetCfg().l == nil {
+		panic("please init log")
+	}
+	return GetCfg().l
+}
+
+func GetDb() *badger.DB {
+	if GetCfg().db == nil {
+		panic("please init db")
+	}
+	return GetCfg().db
+}
+
+func GetCfg() *KConfig {
+	if cfg == nil {
+		panic("please init kconfig")
+	}
+	return cfg
 }
 
 func DefaultKConfig() *KConfig {
-	return &KConfig{
+	cfg = &KConfig{
 		MaxBufLen:           1024 * 16,
 		NtpFailureThreshold: 32,
 		NtpWarningCooldown:  10 * time.Minute,
@@ -84,7 +115,7 @@ func DefaultKConfig() *KConfig {
 		NodeResponseNumber:  8,
 		NodeBroadcastNumber: 16,
 		NodePartitionNumber: 8,
-		HashBits:            len(common.Hash{}) * 8,
+		HashBits:            len(Hash{}) * 8,
 		PingNodeNum:         8,
 		FindNodeNUm:         20,
 		ConnReadTimeout:     5 * time.Second,
@@ -103,11 +134,14 @@ func DefaultKConfig() *KConfig {
 		MinNodeSize: 100,
 		Version:     "1.0.0",
 
-		ExportAddr:  nil,
-		LogLevel:    "info",
-		BucketSize:  16,
-		StoreAckNum: 2,
+		AdvertiseAddr: nil,
+		BucketSize:    16,
+		StoreAckNum:   2,
 
-		uuidC: make(chan string, 1000),
+		KvKey: []byte("kv:"),
+
+		uuidC: make(chan string, 10000),
 	}
+
+	return cfg
 }

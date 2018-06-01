@@ -1,9 +1,5 @@
 package sp2p
 
-import (
-	"github.com/kooksee/common"
-)
-
 func (s *SP2p) Write(msg *KMsg) {
 	go s.writeTx(msg)
 }
@@ -33,7 +29,7 @@ func (s *SP2p) UpdateNode(rawUrl string) error {
 	return nil
 }
 func (s *SP2p) DeleteNode(id string) {
-	s.tab.DeleteNode(common.StringToHash(id))
+	s.tab.DeleteNode(StringToHash(id))
 }
 
 func (s *SP2p) AddNode(rawUrl string) error {
@@ -46,7 +42,7 @@ func (s *SP2p) AddNode(rawUrl string) error {
 }
 
 func (s *SP2p) FindMinDisNodes(target string, n int) (nodes []string) {
-	for _, n := range s.tab.FindMinDisNodes(common.StringToHash(target), n) {
+	for _, n := range s.tab.FindMinDisNodes(StringToHash(target), n) {
 		nodes = append(nodes, n.String())
 	}
 	return
@@ -60,14 +56,14 @@ func (s *SP2p) FindRandomNodes(n int) (nodes []string) {
 }
 
 func (s *SP2p) FindNodeWithTargetBySelf(d string) (nodes []string) {
-	for _, n := range s.tab.FindNodeWithTargetBySelf(common.StringToHash(d)) {
+	for _, n := range s.tab.FindNodeWithTargetBySelf(StringToHash(d)) {
 		nodes = append(nodes, n.String())
 	}
 	return
 }
 
 func (s *SP2p) FindNodeWithTarget(target string, measure string) (nodes []string) {
-	for _, n := range s.tab.FindNodeWithTarget(common.StringToHash(target), common.StringToHash(measure)) {
+	for _, n := range s.tab.FindNodeWithTarget(StringToHash(target), StringToHash(measure)) {
 		nodes = append(nodes, n.String())
 	}
 	return
@@ -97,12 +93,15 @@ func (s *SP2p) GetValue(k []byte) ([]byte, error) {
 func (s *SP2p) KVSetReq(req *KVSetReq) {
 	go s.kvSetReq(req)
 }
+
 func (s *SP2p) KVGetReq(req *KVGetReq) {
 	go s.kvGetReq(req)
 }
+
 func (s *SP2p) GKVSetReq(req *GKVSetReq) {
 	go s.gkvSetReq(req)
 }
+
 func (s *SP2p) GKVGetReq(req *GKVGetReq) {
 	go s.gkvGetReq(req)
 }

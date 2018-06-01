@@ -1,9 +1,5 @@
 package sp2p
 
-import (
-	"github.com/kooksee/common"
-)
-
 type IHandler func(*SP2p, *KMsg)
 
 type IMessage interface {
@@ -27,13 +23,13 @@ type ITable interface {
 	// 更新节点
 	UpdateNode(*Node)
 	// 删除节点
-	DeleteNode(common.Hash)
+	DeleteNode(Hash)
 	// 随机得到路由表中的n个节点
 	FindRandomNodes(int) []*Node
 	// 查找距离最近的n个节点
-	FindMinDisNodes(common.Hash, int) []*Node
+	FindMinDisNodes(Hash, int) []*Node
 	// 查找目标相比本节点更近的节点
-	FindNodeWithTargetBySelf(common.Hash) []*Node
+	FindNodeWithTargetBySelf(Hash) []*Node
 	// 查找目标相比另一个节点的更近的节点
-	FindNodeWithTarget(common.Hash, common.Hash) []*Node
+	FindNodeWithTarget(Hash, Hash) []*Node
 }

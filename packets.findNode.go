@@ -10,13 +10,18 @@ func (t *FindNodeReq) Create() IMessage { return &FindNodeReq{} }
 func (t *FindNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 	node, err := NodeFromKMsg(msg)
 	if err != nil {
-		logger.Error("NodeFromKMsg error", "err", err)
+		GetLog().Error("NodeFromKMsg error", "err", err)
 		return
 	}
 	go p.tab.UpdateNode(node)
 
 	ns := make([]string, 0)
-	for _, n := range p.tab.FindMinDisNodes(node.sha, t.N) {
+
+	// 最多不能超过16
+	if t.N > 16 {
+		t.N = 16
+	}
+	for _, n := range p.tab.FindMinDisNodes(node.ID, t.N) {
 		ns = append(ns, n.String())
 	}
 	p.Write(&KMsg{TAddr: msg.FAddr, Data: &FindNodeResp{Nodes: ns}})
@@ -33,7 +38,7 @@ func (t *FindNodeResp) OnHandle(p *SP2p, msg *KMsg) {
 	for _, n := range t.Nodes {
 		node, err := ParseNode(n)
 		if err != nil {
-			logger.Error("parse node error", "err", err)
+			GetLog().Error("parse node error", "err", err)
 			continue
 		}
 		p.tab.UpdateNode(node)

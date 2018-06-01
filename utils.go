@@ -1,38 +1,23 @@
 package sp2p
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"net"
-	"sync"
 	"time"
-	"crypto/ecdsa"
-	"github.com/kooksee/common"
-	"github.com/kooksee/crypt"
-	"github.com/kooksee/crypt/secp256k1"
+	"strings"
 )
 
-// recoverNodeID computes the public key used to sign the
-// given hash from the signature.
-func RecoverNodeID(hash, sig []byte) (id NodeID, err error) {
-	pubKey, err := secp256k1.RecoverPubkey(hash, sig)
-	if err != nil {
-		return id, err
-	}
-	if len(pubKey)-1 != len(id) {
-		return id, fmt.Errorf("recovered pubkey has %d bits, want %d bits", len(pubKey)*8, (len(id)+1)*8)
-	}
-	for i := range id {
-		id[i] = pubKey[i+1]
-	}
-	return id, nil
+func Errs(err ... string) string {
+	return strings.Join(err, "\n")
 }
+
+var Fmt = fmt.Sprintf
 
 // DistCmp compares the distances a->target and b->target.
 // Returns -1 if a is closer to target, 1 if b is closer to target
 // and 0 if they are equal.
-func distCmp(target, a, b common.Hash) int {
+func DistCmp(target, a, b Hash) int {
 	for i := range target {
 		da := a[i] ^ target[i]
 		db := b[i] ^ target[i]
@@ -45,43 +30,12 @@ func distCmp(target, a, b common.Hash) int {
 	return 0
 }
 
-func expired(ts int64) bool {
+func Expired(ts int64) bool {
 	return time.Unix(ts, 0).Before(time.Now())
 }
 
-func timeAdd(ts time.Duration) time.Time {
+func TimeAdd(ts time.Duration) time.Time {
 	return time.Now().Add(ts)
-}
-
-func NewKBuffer(Delim []byte) *KBuffer {
-	return &KBuffer{
-		Delim: Delim,
-	}
-}
-
-type KBuffer struct {
-	buf   []byte
-	Delim []byte
-	sync.RWMutex
-}
-
-func (t *KBuffer) Next(b []byte) [][]byte {
-	t.Lock()
-	defer t.Unlock()
-
-	if b == nil {
-		return nil
-	}
-
-	t.buf = append(t.buf, b...)
-	if len(t.buf) > 0 {
-		d := bytes.Split(t.buf, t.Delim)
-		if len(d) > 1 {
-			t.buf = d[len(d)-1]
-			return d[:len(d)-1]
-		}
-	}
-	return nil
 }
 
 func If(cond bool, trueVal, falseVal interface{}) interface{} {
@@ -92,7 +46,7 @@ func If(cond bool, trueVal, falseVal interface{}) interface{} {
 }
 
 // logdist returns the logarithmic distance between a and b, log2(a ^ b).
-func logdist(a, b common.Hash) int {
+func Logdist(a, b Hash) int {
 	lz := 0
 	for i := range a {
 		x := a[i] ^ b[i]
@@ -107,7 +61,7 @@ func logdist(a, b common.Hash) int {
 }
 
 // hashAtDistance returns a random hash such that logdist(a, b) == n
-func hashAtDistance(a common.Hash, n int) (b common.Hash) {
+func HashAtDistance(a Hash, n int) (b Hash) {
 	if n == 0 {
 		return a
 	}
@@ -126,14 +80,6 @@ func hashAtDistance(a common.Hash, n int) (b common.Hash) {
 	return b
 }
 
-func randUint(max uint32) uint32 {
-	if max == 0 {
-		return 0
-	}
-	rand.Seed(time.Now().Unix())
-	return rand.Uint32() % max
-}
-
 func NodeFromKMsg(msg *KMsg) (*Node, error) {
 	nid, err := HexID(msg.FID)
 	if err != nil {
@@ -146,29 +92,54 @@ func NodeFromKMsg(msg *KMsg) (*Node, error) {
 	return NewNode(nid, addr.IP, uint16(addr.Port)), nil
 }
 
-func randomID() (id NodeID) {
-	for i := range id {
-		id[i] = byte(rand.Intn(255))
-	}
-	return id
-}
-
-func newkey() *ecdsa.PrivateKey {
-	key, err := crypto.GenerateKey()
-	if err != nil {
-		panic("couldn't generate key: " + err.Error())
-	}
-	return key
-}
-
 func MustNotErr(err error) {
 	if err == nil {
 		return
 	}
-	logger.Error("MustNotErr", "err", err)
+	GetLog().Error("MustNotErr", "err", err)
 	panic(err.Error())
 }
 
 func NodesBackupKey(k []byte) []byte {
 	return append([]byte(cfg.NodesBackupKey), k...)
+}
+
+func KvKey(k []byte) []byte {
+	return append([]byte(cfg.KvKey), k...)
+}
+
+// table of leading zero counts for bytes [0..255]
+var lzcount = [256]int{
+	8, 7, 6, 6, 5, 5, 5, 5,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3,
+	2, 2, 2, 2, 2, 2, 2, 2,
+	2, 2, 2, 2, 2, 2, 2, 2,
+	2, 2, 2, 2, 2, 2, 2, 2,
+	2, 2, 2, 2, 2, 2, 2, 2,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
 }

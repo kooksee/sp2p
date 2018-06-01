@@ -7,7 +7,7 @@ func (t *PingReq) Create() IMessage { return &PingReq{} }
 func (t *PingReq) OnHandle(p *SP2p, msg *KMsg) {
 	node, err := NodeFromKMsg(msg)
 	if err != nil {
-		logger.Error("NodeFromKMsg error", "err", err)
+		GetLog().Error("NodeFromKMsg error", "err", err)
 		return
 	}
 	p.tab.UpdateNode(node)
