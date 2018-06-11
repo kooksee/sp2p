@@ -19,7 +19,6 @@ type KVSetReq struct{ kv }
 
 func (t *KVSetReq) T() byte          { return KVGetReqT }
 func (t *KVSetReq) String() string   { return KVSetReqS }
-func (t *KVSetReq) Create() IMessage { return &KVSetReq{} }
 func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
@@ -44,7 +43,6 @@ type KVGetReq struct{ kv }
 
 func (t *KVGetReq) T() byte          { return KVGetReqT }
 func (t *KVGetReq) String() string   { return KVGetReqS }
-func (t *KVGetReq) Create() IMessage { return &KVGetReq{} }
 func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
@@ -81,7 +79,6 @@ type KVGetResp struct{ kv }
 
 func (t *KVGetResp) T() byte          { return KVGetRespT }
 func (t *KVGetResp) String() string   { return KVGetRespS }
-func (t *KVGetResp) Create() IMessage { return &KVGetResp{} }
 func (t *KVGetResp) OnHandle(p *SP2p, msg *KMsg) {
 	if err := GetDb().Update(func(txn *badger.Txn) error {
 		v, err := json.Marshal(t.V)

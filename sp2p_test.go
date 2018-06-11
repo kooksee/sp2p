@@ -2,13 +2,15 @@ package sp2p
 
 import (
 	"testing"
-	"sort"
 	"fmt"
+	"reflect"
 )
 
 func TestSort(t *testing.T) {
-	a := []int{1, 4, 2, 6, 9, 3, 2, 4, 6, 89, 3, 2, 3, 5}
-	sort.Ints(a)
-
+	a := 0x123
 	fmt.Println(a)
+	a++
+	fmt.Println(a)
+
 }
+

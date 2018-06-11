@@ -31,7 +31,7 @@ func (t *KMsg) Decode(msg []byte) error {
 		return errors.New(fmt.Sprintf("not existed"))
 	}
 
-	t.Data = hm.GetHandler(dt).Create()
+	t.Data = hm.GetHandler(dt)
 	return json.Unmarshal(msg[1:], t)
 }
 

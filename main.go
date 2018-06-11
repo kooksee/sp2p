@@ -5,7 +5,6 @@ import (
 	"time"
 	"strings"
 	"io"
-	"bytes"
 	"github.com/dgraph-io/badger"
 	"github.com/satori/go.uuid"
 )
@@ -239,13 +238,13 @@ func (s *SP2p) accept() {
 			}
 
 			for _, m := range messages {
-				if m == nil || bytes.Equal(m, []byte{}) {
+				if m == nil || len(m) == 0 {
 					continue
 				}
 
 				msg := &KMsg{}
 				if err := msg.Decode(m); err != nil {
-					GetLog().Error("tx msg decode error", "err", err, "method", "sp2p.accept")
+					logger.Error("tx msg decode error", "err", err, "method", "sp2p.accept")
 					continue
 				}
 

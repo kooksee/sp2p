@@ -3,16 +3,17 @@ package sp2p
 func init() {
 	hm := GetHManager()
 
-	MustNotErr(hm.Registry(PingReqT, &PingReq{}))
+	MustNotErr(hm.Registry(
+		PingReq{},
+		FindNodeReq{},
+		FindNodeResp{},
 
-	MustNotErr(hm.Registry(FindNodeReqT, &FindNodeReq{}))
-	MustNotErr(hm.Registry(FindNodeRespT, &FindNodeResp{}))
+		KVSetReq{},
+		KVGetReq{},
+		KVGetResp{},
 
-	MustNotErr(hm.Registry(KVSetReqT, &KVSetReq{}))
-	MustNotErr(hm.Registry(KVGetReqT, &KVGetReq{}))
-	MustNotErr(hm.Registry(KVGetRespT, &KVGetResp{}))
-
-	MustNotErr(hm.Registry(GKVSetReqT, &GKVSetReq{}))
-	MustNotErr(hm.Registry(GKVGetReqT, &GKVGetReq{}))
-	MustNotErr(hm.Registry(GKVGetRespT, &GKVGetResp{}))
+		GKVSetReq{},
+		GKVGetReq{},
+		GKVGetResp{},
+	))
 }

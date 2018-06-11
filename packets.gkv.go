@@ -12,7 +12,6 @@ type GKVSetReq struct{ kv }
 
 func (t *GKVSetReq) T() byte          { return GKVGetReqT }
 func (t *GKVSetReq) String() string   { return GKVSetReqS }
-func (t *GKVSetReq) Create() IMessage { return &GKVSetReq{} }
 func (t *GKVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	if err := GetDb().Update(func(txn *badger.Txn) error {
 		// 检查是否存在
@@ -44,7 +43,6 @@ type GKVGetReq struct{ kv }
 
 func (t *GKVGetReq) T() byte          { return GKVGetReqT }
 func (t *GKVGetReq) String() string   { return GKVGetReqS }
-func (t *GKVGetReq) Create() IMessage { return &GKVGetReq{} }
 func (t *GKVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 	if err := GetDb().View(func(txn *badger.Txn) error {
 		item, err := txn.Get(KvKey(t.K))
@@ -84,7 +82,6 @@ type GKVGetResp struct{ kv }
 
 func (t *GKVGetResp) T() byte          { return GKVGetRespT }
 func (t *GKVGetResp) String() string   { return GKVGetRespS }
-func (t *GKVGetResp) Create() IMessage { return &GKVGetResp{} }
 func (t *GKVGetResp) OnHandle(p *SP2p, msg *KMsg) {
 	if err := GetDb().Update(func(txn *badger.Txn) error {
 		v, err := json.Marshal(t.V)

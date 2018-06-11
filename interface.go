@@ -5,13 +5,19 @@ type IHandler func(*SP2p, *KMsg)
 type IMessage interface {
 	// 获取类型
 	T() byte
-	// 创建一个新的对象
-	Create() IMessage
-	// 活动描述
+	// 描述
 	String() string
 	// 业务处理
 	OnHandle(*SP2p, *KMsg)
 }
+
+type Message struct {
+	IMessage
+}
+
+func (m *Message) T() byte               { return 0 }
+func (m *Message) String() string        { return "" }
+func (m *Message) OnHandle(*SP2p, *KMsg) {}
 
 type ITable interface {
 	// 路由表大小
