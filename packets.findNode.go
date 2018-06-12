@@ -6,7 +6,6 @@ type FindNodeReq struct {
 
 func (t *FindNodeReq) T() byte          { return FindNodeReqT }
 func (t *FindNodeReq) String() string   { return FindNodeReqS }
-func (t *FindNodeReq) Create() IMessage { return &FindNodeReq{} }
 func (t *FindNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 	node, err := NodeFromKMsg(msg)
 	if err != nil {
@@ -28,7 +27,6 @@ type FindNodeResp struct {
 
 func (t *FindNodeResp) T() byte          { return FindNodeRespT }
 func (t *FindNodeResp) String() string   { return FindNodeRespS }
-func (t *FindNodeResp) Create() IMessage { return &FindNodeResp{} }
 func (t *FindNodeResp) OnHandle(p *SP2p, msg *KMsg) {
 	for _, n := range t.Nodes {
 		node, err := ParseNode(n)

@@ -9,8 +9,6 @@ type IHandler func(*SP2p, *KMsg)
 type IMessage interface {
 	// 获取类型
 	T() byte
-	// 创建一个新的对象
-	Create() IMessage
 	// 活动描述
 	String() string
 	// 业务处理
