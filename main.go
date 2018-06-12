@@ -21,7 +21,7 @@ func NewSP2p() *SP2p {
 	if cfg.AdvertiseAddr == nil {
 		logger.Error("没有设置AdvertiseAddr")
 		cfg.AdvertiseAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
-		logger.Warn("默认使用AdvertiseAddr", "addr", cfg.AdvertiseAddr.String())
+		logger.Warn("默认AdvertiseAddr", "addr", cfg.AdvertiseAddr.String())
 	}
 
 	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())

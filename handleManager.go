@@ -1,7 +1,6 @@
 package sp2p
 
 import (
-	"errors"
 	"sync"
 	"reflect"
 )
@@ -30,7 +29,7 @@ func (h *HandleManager) HandleTypes() []byte {
 	return a
 }
 
-func (h *HandleManager) Registry(handlers ... interface{}) error {
+func (h *HandleManager) Registry(handlers ... interface{}) {
 	for _, handler := range handlers {
 
 		h1 := reflect.TypeOf(handler)
@@ -38,12 +37,11 @@ func (h *HandleManager) Registry(handlers ... interface{}) error {
 
 		name := h3.T()
 		if h.Contain(name) {
-			return errors.New(Fmt("%s existed", name))
+			GetLog().Error("handle exist", "type", name, "desc", h3.String())
+			panic("")
 		}
 		h.hmap[name] = h1
 	}
-
-	return nil
 }
 
 func (h *HandleManager) Contain(name byte) bool {

@@ -10,7 +10,7 @@ import (
 
 type GKVSetReq struct{ kv }
 
-func (t *GKVSetReq) T() byte          { return GKVGetReqT }
+func (t *GKVSetReq) T() byte          { return GKVSetReqT }
 func (t *GKVSetReq) String() string   { return GKVSetReqS }
 func (t *GKVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	if err := GetDb().Update(func(txn *badger.Txn) error {

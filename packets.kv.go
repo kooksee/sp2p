@@ -17,7 +17,7 @@ type kv struct {
 
 type KVSetReq struct{ kv }
 
-func (t *KVSetReq) T() byte          { return KVGetReqT }
+func (t *KVSetReq) T() byte          { return KVSetReqT }
 func (t *KVSetReq) String() string   { return KVSetReqS }
 func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))

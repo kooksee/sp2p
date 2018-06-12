@@ -6,6 +6,7 @@ import (
 	"net"
 	"github.com/kooksee/kdb"
 	"os"
+	"path/filepath"
 )
 
 var (
@@ -92,7 +93,7 @@ func (t *KConfig) InitDb(db *kdb.KDB) {
 	if db != nil {
 		t.db = db
 	} else {
-		kdb.InitKdb("kdata")
+		kdb.InitKdb(filepath.Join("kdata", "db"))
 		t.db = kdb.GetKdb()
 	}
 }

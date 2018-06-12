@@ -1,9 +1,7 @@
 package sp2p
 
 func init() {
-	hm := GetHManager()
-
-	MustNotErr(hm.Registry(
+	GetHManager().Registry(
 		PingReq{},
 		FindNodeReq{},
 		FindNodeResp{},
@@ -15,5 +13,5 @@ func init() {
 		GKVSetReq{},
 		GKVGetReq{},
 		GKVGetResp{},
-	))
+	)
 }
