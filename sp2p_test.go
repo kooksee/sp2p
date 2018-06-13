@@ -3,7 +3,6 @@ package sp2p
 import (
 	"testing"
 	"fmt"
-	"reflect"
 )
 
 func TestSort(t *testing.T) {
@@ -13,4 +12,3 @@ func TestSort(t *testing.T) {
 	fmt.Println(a)
 
 }
-

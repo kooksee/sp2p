@@ -86,7 +86,7 @@ func (s *SP2p) FindNode(taddr string, n int) {
 }
 
 // 获得本地存储的value
-func (s *SP2p) GetValue(k []byte) ([]byte, error) {
+func (s *SP2p) GetValue(k []byte) []byte {
 	return s.getValue(k)
 }
 
