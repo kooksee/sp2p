@@ -15,7 +15,6 @@ import (
 type Node struct {
 	IP  net.IP // len 4 for IPv4 or 16 for IPv6
 	UDP uint16 // port numbers
-	TCP uint16 // tcp port
 	ID  Hash   // the node's public key
 
 	// Time when the node was added to the table.
@@ -34,7 +33,6 @@ func NewNode(id Hash, ip net.IP, udpPort uint16) *Node {
 	return &Node{
 		IP:         ip,
 		UDP:        udpPort,
-		TCP:        0,
 		ID:         id,
 		addr:       "",
 		updateAt:   time.Now(),

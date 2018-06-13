@@ -5,14 +5,19 @@ import (
 	"sync"
 )
 
-func NewKBuffer(delim []byte) *KBuffer {
-	return &KBuffer{delim: delim}
+func NewKBuffer() *KBuffer {
+	return &KBuffer{dmt: []byte{'\n'}}
 }
 
 type KBuffer struct {
-	buf   []byte
-	delim []byte
+	buf []byte
+	dmt []byte
 	sync.RWMutex
+}
+
+func (t *KBuffer) SetDmt(dmt []byte) *KBuffer {
+	t.dmt = dmt
+	return t
 }
 
 func (t *KBuffer) Next(b []byte) [][]byte {

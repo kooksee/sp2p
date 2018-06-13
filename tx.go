@@ -28,7 +28,7 @@ func (t *KMsg) DecodeFromConn(r io.Reader) error {
 func (t *KMsg) Decode(msg []byte) error {
 	dt := msg[0]
 	if !hm.Contain(dt) {
-		return errors.New(fmt.Sprintf("not existed"))
+		return errors.New(fmt.Sprintf("type %s is not existed", dt))
 	}
 
 	t.Data = hm.GetHandler(dt)

@@ -11,14 +11,6 @@ type IMessage interface {
 	OnHandle(*SP2p, *KMsg)
 }
 
-type Message struct {
-	IMessage
-}
-
-func (m *Message) T() byte               { return 0 }
-func (m *Message) String() string        { return "" }
-func (m *Message) OnHandle(*SP2p, *KMsg) {}
-
 type ITable interface {
 	// 路由表大小
 	Size() int
