@@ -5,8 +5,6 @@ import (
 	"time"
 	"strings"
 	"io"
-	"bytes"
-	"github.com/dgraph-io/badger"
 	"github.com/satori/go.uuid"
 )
 
@@ -22,15 +20,16 @@ func NewSP2p() *SP2p {
 	if cfg.AdvertiseAddr == nil {
 		logger.Error("没有设置AdvertiseAddr")
 		cfg.AdvertiseAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
-		logger.Warn("默认使用AdvertiseAddr", "addr", cfg.AdvertiseAddr.String())
+		logger.Warn("默认AdvertiseAddr", "addr", cfg.AdvertiseAddr.String())
 	}
 
 	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())
-	conn, err := net.ListenUDP("udp", p2p.localAddr)
-	if err != nil {
+
+	if conn, err := net.ListenUDP("udp", p2p.localAddr); err != nil {
 		panic(Errs(Fmt("udp %s listen error", p2p.localAddr), err.Error()))
+	} else {
+		p2p.conn = conn
 	}
-	p2p.conn = conn
 
 	nodeId := MustHexID(If(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
 	logger.Debug("node id", "id", nodeId)
@@ -42,9 +41,6 @@ func NewSP2p() *SP2p {
 	go p2p.loop()
 	go p2p.genUUID()
 
-	if err := p2p.loadSeeds(cfg.Seeds); err != nil {
-		panic(Errs("load seeds error", err.Error()))
-	}
 	return p2p
 }
 
@@ -72,53 +68,6 @@ func (s *SP2p) GetAddr() string {
 		s.laddr = s.localAddr.String()
 	}
 	return s.laddr
-}
-
-func (s *SP2p) loadSeeds(seeds []string) error {
-	txn := GetDb().NewTransaction(true)
-	defer txn.Discard()
-
-	k := []byte(cfg.NodesBackupKey)
-	iter := txn.NewIterator(badger.DefaultIteratorOptions)
-	for iter.Seek(k); ; iter.Next() {
-		if !iter.ValidForPrefix(k) {
-			break
-		}
-
-		val, err := iter.Item().Value()
-		if err != nil {
-			GetLog().Error("loadSeeds error", "err", err)
-			continue
-		}
-
-		seeds = append(seeds, string(val))
-	}
-
-	for _, rn := range seeds {
-		if rn == s.tab.selfNode.String() {
-			continue
-		}
-		n := MustParseNode(rn)
-		s.tab.AddNode(n)
-		go s.pingNode(n.AddrString())
-	}
-
-	// 节点启动的时候如果发现节点数量少,就去请求其他节点
-	if s.tab.Size() < cfg.MinNodeSize {
-		// 节点太少的情况下，就去所有的节点去请求数据
-		for _, b := range s.tab.buckets {
-			b.peers.Each(func(index int, value interface{}) {
-				go s.findNode(value.(*Node).AddrString(), 8)
-			})
-		}
-	} else if s.tab.Size() < cfg.MaxNodeSize {
-		// 每一个域选取一个节点
-		for _, b := range s.tab.buckets {
-			go s.findNode(b.Random().AddrString(), 8)
-		}
-	}
-
-	return txn.Commit(nil)
 }
 
 func (s *SP2p) loop() {
@@ -209,23 +158,12 @@ func (s *SP2p) gkvGetReq(req *GKVGetReq) {
 }
 
 // 获得本地存储的value
-func (s *SP2p) getValue(k []byte) (value []byte, err error) {
-	return value, GetDb().View(func(txn *badger.Txn) error {
-		item, err := txn.Get(k)
-		if err != nil {
-			return err
-		}
-		v, err := item.Value()
-		if err != nil {
-			return err
-		}
-		value = v
-		return nil
-	})
+func (s *SP2p) getValue(k []byte) []byte {
+	return GetDb().KHash(kvPrefix).Get(k)
 }
 
 func (s *SP2p) accept() {
-	kb := NewKBuffer([]byte{'\n'})
+	kb := NewKBuffer()
 	logger := GetLog()
 	for {
 		buf := make([]byte, cfg.MaxBufLen)
@@ -239,13 +177,13 @@ func (s *SP2p) accept() {
 			}
 
 			for _, m := range messages {
-				if m == nil || bytes.Equal(m, []byte{}) {
+				if m == nil || len(m) == 0 {
 					continue
 				}
 
 				msg := &KMsg{}
 				if err := msg.Decode(m); err != nil {
-					GetLog().Error("tx msg decode error", "err", err, "method", "sp2p.accept")
+					logger.Error("tx msg decode error", "err", err, "method", "sp2p.accept")
 					continue
 				}
 

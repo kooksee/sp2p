@@ -31,10 +31,13 @@ func NewNode(id Hash, ip net.IP, udpPort uint16) *Node {
 		ip = ipv4
 	}
 	return &Node{
-		IP:       ip,
-		UDP:      udpPort,
-		ID:       id,
-		updateAt: time.Now(),
+		IP:         ip,
+		UDP:        udpPort,
+		ID:         id,
+		addr:       "",
+		updateAt:   time.Now(),
+		udpAddr:    nil,
+		nodeString: "",
 	}
 }
 

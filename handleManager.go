@@ -1,9 +1,8 @@
 package sp2p
 
 import (
-	"errors"
-	"fmt"
 	"sync"
+	"reflect"
 )
 
 var (
@@ -13,21 +12,36 @@ var (
 
 func GetHManager() *HandleManager {
 	hmOnce.Do(func() {
-		hm = &HandleManager{hmap: make(map[byte]IMessage)}
+		hm = &HandleManager{hmap: make(map[byte]reflect.Type)}
 	})
 	return hm
 }
 
 type HandleManager struct {
-	hmap map[byte]IMessage
+	hmap map[byte]reflect.Type
 }
 
-func (h *HandleManager) Registry(name byte, handler IMessage) error {
-	if h.Contain(name) {
-		return errors.New(fmt.Sprintf("%s existed", name))
+func (h *HandleManager) HandleTypes() []byte {
+	a := make([]byte, 0)
+	for k := range h.hmap {
+		a = append(a, k)
 	}
-	h.hmap[name] = handler
-	return nil
+	return a
+}
+
+func (h *HandleManager) Registry(handlers ... interface{}) {
+	for _, handler := range handlers {
+
+		h1 := reflect.TypeOf(handler)
+		h3 := reflect.New(h1).Interface().(IMessage)
+
+		name := h3.T()
+		if h.Contain(name) {
+			GetLog().Error("handle exist", "type", name, "desc", h3.String())
+			panic("")
+		}
+		h.hmap[name] = h1
+	}
 }
 
 func (h *HandleManager) Contain(name byte) bool {
@@ -36,5 +50,7 @@ func (h *HandleManager) Contain(name byte) bool {
 }
 
 func (h *HandleManager) GetHandler(name byte) IMessage {
-	return h.hmap[name]
+	h1 := h.hmap[name]
+	h2 := reflect.New(h1)
+	return h2.Interface().(IMessage)
 }

@@ -4,9 +4,7 @@ package sp2p
 采用分片的方式进行kv存储,同时定时抽样的方式检测自己的数据是否有合适的节点可以存储
  */
 
-import (
-	"github.com/dgraph-io/badger"
-)
+const kvPrefix = "kv"
 
 type kv struct {
 	K       []byte `json:"k,omitempty"`
@@ -17,19 +15,12 @@ type kv struct {
 
 type KVSetReq struct{ kv }
 
-func (t *KVSetReq) T() byte          { return KVGetReqT }
-func (t *KVSetReq) String() string   { return KVSetReqS }
-func (t *KVSetReq) Create() IMessage { return &KVSetReq{} }
+func (t *KVSetReq) T() byte        { return KVSetReqT }
+func (t *KVSetReq) String() string { return KVSetReqS }
 func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
-		if err := GetDb().Update(func(txn *badger.Txn) error {
-			v, err := json.Marshal(t.V)
-			if err != nil {
-				return err
-			}
-			return txn.Set(KvKey(t.K), v)
-		}); err != nil {
+		if err := GetDb().KHash(kvPrefix).Set(t.K, t.V); err != nil {
 			GetLog().Error("kvset error", "err", err)
 		}
 		return
@@ -42,33 +33,16 @@ func (t *KVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 
 type KVGetReq struct{ kv }
 
-func (t *KVGetReq) T() byte          { return KVGetReqT }
-func (t *KVGetReq) String() string   { return KVGetReqS }
-func (t *KVGetReq) Create() IMessage { return &KVGetReq{} }
+func (t *KVGetReq) T() byte        { return KVGetReqT }
+func (t *KVGetReq) String() string { return KVGetReqS }
 func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 	nodes := p.GetTable().FindNodeWithTargetBySelf(BytesToHash(t.K))
 	if len(nodes) < cfg.NodePartitionNumber {
-		if err := GetDb().View(func(txn *badger.Txn) error {
-			item, err := txn.Get(KvKey(t.K))
-			if err != nil {
-				return err
-			}
-			v, err := item.Value()
-			if err != nil {
-				return err
-			}
+		resp := &KVGetResp{}
+		resp.K = t.K
+		resp.V = GetDb().KHash(kvPrefix).Get(t.K)
 
-			resp := &KVGetResp{}
-			resp.K = t.K
-			resp.V = v
-
-			p.writeTx(&KMsg{Data: resp, TAddr: msg.FAddr})
-
-			return nil
-
-		}); err != nil {
-			GetLog().Error(err.Error())
-		}
+		p.writeTx(&KMsg{Data: resp, TAddr: msg.FAddr})
 		return
 	}
 
@@ -79,17 +53,10 @@ func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 
 type KVGetResp struct{ kv }
 
-func (t *KVGetResp) T() byte          { return KVGetRespT }
-func (t *KVGetResp) String() string   { return KVGetRespS }
-func (t *KVGetResp) Create() IMessage { return &KVGetResp{} }
+func (t *KVGetResp) T() byte        { return KVGetRespT }
+func (t *KVGetResp) String() string { return KVGetRespS }
 func (t *KVGetResp) OnHandle(p *SP2p, msg *KMsg) {
-	if err := GetDb().Update(func(txn *badger.Txn) error {
-		v, err := json.Marshal(t.V)
-		if err != nil {
-			return err
-		}
-		return txn.Set(KvKey(t.K), v)
-	}); err != nil {
+	if err := GetDb().KHash(kvPrefix).Set(t.K, t.V); err != nil {
 		GetLog().Error(err.Error())
 	}
 }

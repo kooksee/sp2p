@@ -1,20 +1,25 @@
 package sp2p
 
 import (
-	"encoding/hex"
 	"time"
 
-	"github.com/dgraph-io/badger"
 	"github.com/emirpasic/gods/lists/arraylist"
+	"github.com/kooksee/kdb"
+	"encoding/hex"
+	"errors"
 )
+
+const BucketPrefix = "bkt"
 
 type bucket struct {
 	peers *arraylist.List
+	h     *kdb.KHash
 }
 
 func newBuckets() *bucket {
 	return &bucket{
 		peers: arraylist.New(),
+		h:     GetDb().KHash(BucketPrefix),
 	}
 }
 
@@ -27,42 +32,42 @@ func (b *bucket) updateNodes(nodes ... *Node) {
 
 // addNode add node to bucket, if bucket is full, will remove an old one
 func (b *bucket) addNodes(nodes ... *Node) {
-	// 把最活跃的放到最前面,然后移除最不活跃的
-	txn := GetDb().NewTransaction(true)
-	defer txn.Discard()
 
 	logger := GetLog()
 
-	for _, node := range nodes {
-		logger.Info("add node", "node", node.String())
-		b.peers.Add(node)
-		if err := txn.Set(NodesBackupKey(node.ID.Bytes()), []byte(node.String())); err != nil {
-			logger.Error("add peer error", "err", err)
-			continue
+	// 把最活跃的放到最前面,然后移除最不活跃的
+	if err := b.h.BatchUpdate(func(k *kdb.KHBatch) error {
+		for _, node := range nodes {
+			logger.Info("add node", "node", node.String())
+			b.peers.Add(node)
+			if err := k.Set(NodesBackupKey(node.ID.Bytes()), []byte(node.String())); err != nil {
+				logger.Error("add peer error", "err", err)
+				continue
+			}
 		}
+
+		b.peers.Sort(func(a, b interface{}) int { return int(b.(*Node).updateAt.Sub(a.(*Node).updateAt)) })
+		size := b.peers.Size()
+		if size < cfg.BucketSize {
+			return errors.New("")
+		}
+
+		for i := cfg.BucketSize; i < size; i++ {
+			val, e := b.peers.Get(i)
+			if !e {
+				continue
+			}
+			b.peers.Remove(i)
+			if err := k.MDel(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
+				logger.Error("delete peer error", "err", err)
+				continue
+			}
+		}
+		return nil
+	}); err != nil {
+
 	}
 
-	b.peers.Sort(func(a, b interface{}) int { return int(b.(*Node).updateAt.Sub(a.(*Node).updateAt)) })
-	size := b.peers.Size()
-	if size < cfg.BucketSize {
-		return
-	}
-
-	for i := cfg.BucketSize; i < size; i++ {
-		val, e := b.peers.Get(i)
-		if !e {
-			continue
-		}
-		b.peers.Remove(i)
-		if err := txn.Delete(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
-			logger.Error("delete peer error", "err", err)
-			continue
-		}
-	}
-
-	if err := txn.Commit(nil); err != nil {
-		logger.Error("commit peer error", "err", err)
-	}
 }
 
 // findNode check if the bucket already have this node, if so, return its index, otherwise, return -1
@@ -80,14 +85,14 @@ func (b *bucket) Random() *Node {
 }
 
 func (b *bucket) deleteNodes(targets ... Hash) {
-	if err := GetDb().Update(func(txn *badger.Txn) error {
+	if err := b.h.BatchUpdate(func(k *kdb.KHBatch) error {
 		for _, node := range targets {
 			if a := b.peers.IndexOf(node); a != -1 {
 				val, bl := b.peers.Get(a)
 				if !bl {
 					continue
 				}
-				if err := txn.Delete(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
+				if err := k.MDel(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
 					GetLog().Error("deleteNodes error", "err", err)
 					continue
 				}
@@ -95,7 +100,6 @@ func (b *bucket) deleteNodes(targets ... Hash) {
 				b.peers.Remove(a)
 			}
 		}
-
 		return nil
 	}); err != nil {
 		GetLog().Error("update peer", "err", err)

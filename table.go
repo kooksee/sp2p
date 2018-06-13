@@ -15,7 +15,7 @@ const NBuckets = len(Hash{})*8 + 1
 type Table struct {
 	ITable
 
-	mutex sync.Mutex // protects buckets, their content, and nursery
+	mutex sync.Mutex
 
 	buckets  [NBuckets]*bucket
 	selfNode *Node //info of local node
@@ -23,9 +23,7 @@ type Table struct {
 
 func newTable(id Hash, addr *net.UDPAddr) *Table {
 
-	table := &Table{
-		selfNode: NewNode(id, addr.IP, uint16(addr.Port)),
-	}
+	table := &Table{selfNode: NewNode(id, addr.IP, uint16(addr.Port))}
 
 	for i := 0; i < NBuckets; i++ {
 		table.buckets[i] = newBuckets()
@@ -67,7 +65,7 @@ func (t *Table) UpdateNode(node *Node) {
 func (t *Table) Size() int {
 	n := 0
 	for _, b := range t.buckets {
-		n += b.peers.Size()
+		n += b.size()
 	}
 	return n
 }

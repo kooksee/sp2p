@@ -2,9 +2,11 @@ package sp2p
 
 import (
 	"time"
-	"github.com/dgraph-io/badger"
 	log "github.com/inconshreveable/log15"
 	"net"
+	"github.com/kooksee/kdb"
+	"os"
+	"path/filepath"
 )
 
 var (
@@ -70,35 +72,50 @@ type KConfig struct {
 	KvKey []byte
 
 	uuidC chan string
-	db    *badger.DB
+	db    *kdb.KDB
 	l     log.Logger
 }
 
 func (t *KConfig) InitLog(l log.Logger) {
-	t.l = l.New("package", "sp2p")
+	if l != nil {
+		t.l = l.New("package", "sp2p")
+	} else {
+		l = log.New("package", "sp2p")
+		ll, err := log.LvlFromString("debug")
+		if err != nil {
+			panic(err.Error())
+		}
+		t.l.SetHandler(log.LvlFilterHandler(ll, log.StreamHandler(os.Stdout, log.TerminalFormat())))
+	}
 }
 
-func (t *KConfig) InitDb(db *badger.DB) {
-	t.db = db
+func (t *KConfig) InitDb(db *kdb.KDB) {
+	if db != nil {
+		t.db = db
+	} else {
+		kdb.InitKdb(filepath.Join("kdata", "db"))
+		t.db = kdb.GetKdb()
+	}
 }
 
 func GetLog() log.Logger {
 	if GetCfg().l == nil {
-		panic("please init log")
+		panic("please init sp2p log")
 	}
 	return GetCfg().l
 }
 
-func GetDb() *badger.DB {
+func GetDb() *kdb.KDB {
 	if GetCfg().db == nil {
-		panic("please init db")
+		GetLog().Error("please init sp2p db")
+		panic("")
 	}
 	return GetCfg().db
 }
 
 func GetCfg() *KConfig {
 	if cfg == nil {
-		panic("please init kconfig")
+		panic("please init sp2p config")
 	}
 	return cfg
 }
