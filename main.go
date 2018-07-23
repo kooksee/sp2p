@@ -102,7 +102,7 @@ func (s *SP2p) write(msg *KMsg) {
 		msg.Version = cfg.Version
 	}
 	if msg.TAddr == "" {
-		GetLog().Error("target udp addr does not exist")
+		GetLog().Error("target udp addr is nonexistent")
 		return
 	}
 
@@ -158,7 +158,7 @@ func (s *SP2p) gkvGetReq(req *GKVGetReq) {
 }
 
 // 获得本地存储的value
-func (s *SP2p) getValue(k []byte) []byte {
+func (s *SP2p) getValue(k []byte) ([]byte, error) {
 	return GetDb().KHash(kvPrefix).Get(k)
 }
 
@@ -183,7 +183,7 @@ func (s *SP2p) accept() {
 
 				msg := &KMsg{}
 				if err := msg.Decode(m); err != nil {
-					logger.Error("tx msg decode error", "err", err, "method", "sp2p.accept")
+					logger.Error("kmsg decode error", "err", err.Error(), "method", "sp2p.accept")
 					continue
 				}
 

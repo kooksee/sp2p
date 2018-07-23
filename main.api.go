@@ -28,8 +28,13 @@ func (s *SP2p) UpdateNode(rawUrl string) error {
 	s.tab.UpdateNode(n)
 	return nil
 }
-func (s *SP2p) DeleteNode(id string) {
-	s.tab.DeleteNode(StringToHash(id))
+func (s *SP2p) DeleteNode(id string) error {
+	n, err := HexToHash(id)
+	if err != nil {
+		return err
+	}
+	s.tab.DeleteNode(n)
+	return nil
 }
 
 func (s *SP2p) AddNode(rawUrl string) error {
@@ -41,11 +46,16 @@ func (s *SP2p) AddNode(rawUrl string) error {
 	return nil
 }
 
-func (s *SP2p) FindMinDisNodes(target string, n int) (nodes []string) {
-	for _, n := range s.tab.FindMinDisNodes(StringToHash(target), n) {
+func (s *SP2p) FindMinDisNodes(targetID string, n int) (nodes []string, err error) {
+	h, err := HexToHash(targetID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, n := range s.tab.FindMinDisNodes(h, n) {
 		nodes = append(nodes, n.String())
 	}
-	return
+	return nodes, nil
 }
 
 func (s *SP2p) FindRandomNodes(n int) (nodes []string) {
@@ -62,8 +72,8 @@ func (s *SP2p) FindNodeWithTargetBySelf(d string) (nodes []string) {
 	return
 }
 
-func (s *SP2p) FindNodeWithTarget(target string, measure string) (nodes []string) {
-	for _, n := range s.tab.FindNodeWithTarget(StringToHash(target), StringToHash(measure)) {
+func (s *SP2p) FindNodeWithTarget(targetId string, measure string) (nodes []string) {
+	for _, n := range s.tab.FindNodeWithTarget(StringToHash(targetId), StringToHash(measure)) {
 		nodes = append(nodes, n.String())
 	}
 	return
@@ -86,7 +96,7 @@ func (s *SP2p) FindNode(taddr string, n int) {
 }
 
 // 获得本地存储的value
-func (s *SP2p) GetValue(k []byte) []byte {
+func (s *SP2p) GetValue(k []byte) ([]byte,error) {
 	return s.getValue(k)
 }
 

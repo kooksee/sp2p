@@ -4,7 +4,7 @@ package sp2p
 通过广播的方式进行数据存储,同时随机抽样检测数据的一致性
  */
 
-const gkvPrefix = "gkv"
+var gkvPrefix = []byte("gkv")
 
 type GKVSetReq struct{ kv }
 
@@ -20,7 +20,7 @@ func (t *GKVSetReq) OnHandle(p *SP2p, msg *KMsg) {
 		p.writeTx(&KMsg{
 			FAddr: msg.FAddr,
 			Data:  msg.Data,
-			TAddr: node.Addr().String(),
+			TAddr: node.AddrString(),
 		})
 	}
 }
@@ -30,8 +30,8 @@ type GKVGetReq struct{ kv }
 func (t *GKVGetReq) T() byte        { return GKVGetReqT }
 func (t *GKVGetReq) String() string { return GKVGetReqS }
 func (t *GKVGetReq) OnHandle(p *SP2p, msg *KMsg) {
-	v := GetDb().KHash(gkvPrefix).Get(t.K)
-	if v == nil {
+	v, _ := GetDb().KHash(gkvPrefix).Get(t.K)
+	if v == nil || len(v) == 0 {
 		for _, node := range p.tab.FindRandomNodes(8) {
 			p.writeTx(&KMsg{
 				Data:  msg.Data,

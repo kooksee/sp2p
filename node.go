@@ -79,17 +79,19 @@ func (n *Node) validateComplete() error {
 // The string representation of a Node is a URL.
 // Please see ParseNode for a description of the format.
 func (n *Node) String() string {
-	if n.nodeString == "" {
-		u := url.URL{Scheme: "enode"}
-		if n.Incomplete() {
-			u.Host = Fmt("%x", n.ID[:])
-		} else {
-			//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
-			u.User = url.User(Fmt("%x", n.ID[:]))
-			u.Host = n.AddrString()
-		}
-		n.nodeString = u.String()
+	if n.nodeString != "" {
+		return n.nodeString
 	}
+
+	u := url.URL{Scheme: "sp2p"}
+	if n.Incomplete() {
+		u.Host = Fmt("%x", n.ID[:])
+	} else {
+		//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
+		u.User = url.User(Fmt("%x", n.ID[:]))
+		u.Host = n.AddrString()
+	}
+	n.nodeString = u.String()
 
 	return n.nodeString
 }
@@ -119,7 +121,7 @@ func parseComplete(rawurl string) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if u.Scheme != "enode" {
+	if u.Scheme != "sp2p" {
 		return nil, errors.New("invalid URL scheme, want \"enode\"")
 	}
 	// Parse the Node ID from the user portion.

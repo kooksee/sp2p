@@ -4,7 +4,7 @@ package sp2p
 采用分片的方式进行kv存储,同时定时抽样的方式检测自己的数据是否有合适的节点可以存储
  */
 
-const kvPrefix = "kv"
+var kvPrefix = []byte("kv")
 
 type kv struct {
 	K       []byte `json:"k,omitempty"`
@@ -40,7 +40,7 @@ func (t *KVGetReq) OnHandle(p *SP2p, msg *KMsg) {
 	if len(nodes) < cfg.NodePartitionNumber {
 		resp := &KVGetResp{}
 		resp.K = t.K
-		resp.V = GetDb().KHash(kvPrefix).Get(t.K)
+		resp.V, _ = GetDb().KHash(kvPrefix).Get(t.K)
 
 		p.writeTx(&KMsg{Data: resp, TAddr: msg.FAddr})
 		return

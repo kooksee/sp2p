@@ -9,7 +9,7 @@ import (
 	"errors"
 )
 
-const BucketPrefix = "bkt"
+var BucketPrefix = []byte("bkt")
 
 type bucket struct {
 	peers *arraylist.List
@@ -36,7 +36,7 @@ func (b *bucket) addNodes(nodes ... *Node) {
 	logger := GetLog()
 
 	// 把最活跃的放到最前面,然后移除最不活跃的
-	if err := b.h.BatchUpdate(func(k *kdb.KHBatch) error {
+	if err := b.h.WithTx(func(k *kdb.KHBatch) error {
 		for _, node := range nodes {
 			logger.Info("add node", "node", node.String())
 			b.peers.Add(node)
@@ -85,7 +85,7 @@ func (b *bucket) Random() *Node {
 }
 
 func (b *bucket) deleteNodes(targets ... Hash) {
-	if err := b.h.BatchUpdate(func(k *kdb.KHBatch) error {
+	if err := b.h.WithTx(func(k *kdb.KHBatch) error {
 		for _, node := range targets {
 			if a := b.peers.IndexOf(node); a != -1 {
 				val, bl := b.peers.Get(a)

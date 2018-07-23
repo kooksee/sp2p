@@ -2,7 +2,7 @@ package sp2p
 
 import (
 	"time"
-	log "github.com/inconshreveable/log15"
+	"github.com/inconshreveable/log15"
 	"net"
 	"github.com/kooksee/kdb"
 	"os"
@@ -25,7 +25,6 @@ type KConfig struct {
 	NtpPool string
 	// Number of measurements to do against the NTP server
 	NtpChecks int
-
 	// Allowed clock drift before warning user
 	DriftThreshold time.Duration
 
@@ -53,8 +52,6 @@ type KConfig struct {
 
 	NodesBackupKey string
 
-	DELIMITER byte
-
 	BucketSize int
 
 	MaxNodeSize int
@@ -73,19 +70,19 @@ type KConfig struct {
 
 	uuidC chan string
 	db    *kdb.KDB
-	l     log.Logger
+	l     log15.Logger
 }
 
-func (t *KConfig) InitLog(l log.Logger) {
+func (t *KConfig) InitLog(l log15.Logger) {
 	if l != nil {
 		t.l = l.New("package", "sp2p")
 	} else {
-		l = log.New("package", "sp2p")
-		ll, err := log.LvlFromString("debug")
+		l = log15.New("package", "sp2p")
+		ll, err := log15.LvlFromString("debug")
 		if err != nil {
 			panic(err.Error())
 		}
-		t.l.SetHandler(log.LvlFilterHandler(ll, log.StreamHandler(os.Stdout, log.TerminalFormat())))
+		t.l.SetHandler(log15.LvlFilterHandler(ll, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
 	}
 }
 
@@ -98,7 +95,7 @@ func (t *KConfig) InitDb(db *kdb.KDB) {
 	}
 }
 
-func GetLog() log.Logger {
+func GetLog() log15.Logger {
 	if GetCfg().l == nil {
 		panic("please init sp2p log")
 	}
@@ -141,7 +138,6 @@ func DefaultKConfig() *KConfig {
 		Host:           "0.0.0.0",
 		Port:           8080,
 		NodesBackupKey: "nbk:",
-		DELIMITER:      '\n',
 
 		PingTick:     time.NewTicker(10 * time.Minute),
 		FindNodeTick: time.NewTicker(1 * time.Hour),
@@ -157,7 +153,7 @@ func DefaultKConfig() *KConfig {
 
 		KvKey: []byte("kv:"),
 
-		uuidC: make(chan string, 10000),
+		uuidC: make(chan string, 500),
 	}
 
 	return cfg

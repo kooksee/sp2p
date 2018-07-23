@@ -34,11 +34,11 @@ func (t *KBuffer) Next(b []byte) [][]byte {
 		return nil
 	}
 
-	if !bytes.Contains(t.buf, t.delim) {
+	if !bytes.Contains(t.buf, t.dmt) {
 		return nil
 	}
 
-	d := bytes.Split(t.buf, t.delim)
+	d := bytes.Split(t.buf, t.dmt)
 	if len(d) < 1 {
 		return nil
 	}

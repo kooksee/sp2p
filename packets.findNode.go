@@ -21,6 +21,7 @@ func (t *FindNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 	if t.N > 16 {
 		t.N = 16
 	}
+
 	for _, n := range p.tab.FindMinDisNodes(node.ID, t.N) {
 		ns = append(ns, n.String())
 	}
