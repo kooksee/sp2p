@@ -11,31 +11,40 @@ import (
 func NewSP2p() *SP2p {
 	logger := GetLog()
 
+	taddr, err := net.ResolveTCPAddr("tcp", cfg.Adds[0])
+	if err != nil {
+		panic(err.Error())
+	}
+
 	p2p := &SP2p{
 		txRC:      make(chan *KMsg, 10000),
 		txWC:      make(chan *KMsg, 10000),
-		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
+		localAddr: taddr,
+		laddr:     cfg.Adds[0],
 	}
 
-	if cfg.AdvertiseAddr == nil {
-		logger.Error("没有设置AdvertiseAddr")
-		cfg.AdvertiseAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
-		logger.Warn("默认AdvertiseAddr", "addr", cfg.AdvertiseAddr.String())
+	uad, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+	if err != nil {
+		panic(err.Error())
 	}
+	cnn, err := net.ListenUDP("udp", uad)
+	if err != nil {
+		panic(err.Error())
+	}
+	p2p.rconn = cnn
 
-	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())
-
-	if conn, err := net.ListenUDP("udp", p2p.localAddr); err != nil {
+	if conn, err := net.DialTCP("udp", nil, p2p.localAddr); err != nil {
 		panic(Errs(Fmt("udp %s listen error", p2p.localAddr), err.Error()))
 	} else {
 		p2p.conn = conn
 	}
 
 	nodeId := MustHexID(If(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
-	logger.Debug("node id", "id", nodeId)
 
+	logger.Debug("node id", "id", nodeId)
 	logger.Debug("create table", "table")
-	p2p.tab = newTable(nodeId, cfg.AdvertiseAddr)
+
+	p2p.tab = newTable(nodeId, p2p.localAddr)
 
 	go p2p.accept()
 	go p2p.loop()
@@ -48,8 +57,9 @@ type SP2p struct {
 	tab       *Table
 	txRC      chan *KMsg
 	txWC      chan *KMsg
-	conn      *net.UDPConn
-	localAddr *net.UDPAddr
+	conn      *net.TCPConn
+	rconn     *net.UDPConn
+	localAddr *net.TCPAddr
 	laddr     string
 }
 
@@ -64,9 +74,6 @@ func (s *SP2p) genUUID() {
 }
 
 func (s *SP2p) GetAddr() string {
-	if s.laddr == "" {
-		s.laddr = s.localAddr.String()
-	}
 	return s.laddr
 }
 
@@ -92,8 +99,8 @@ func (s *SP2p) writeTx(msg *KMsg) {
 }
 
 func (s *SP2p) write(msg *KMsg) {
-	if msg.FAddr == "" {
-		msg.FAddr = s.GetAddr()
+	if msg.Addr == "" {
+		msg.Addr = s.GetAddr()
 	}
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
@@ -112,14 +119,14 @@ func (s *SP2p) write(msg *KMsg) {
 		return
 	}
 
-	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
+	if _, err := s.rconn.WriteToUDP(msg.Dumps(), addr); err != nil {
 		GetLog().Error("WriteToUDP error", "err", err)
 		return
 	}
 }
 
 func (s *SP2p) pingNode(taddr string) {
-	s.Write(&KMsg{TAddr: taddr, FID: s.tab.selfNode.ID.ToHex(), Data: &PingReq{}})
+	s.Write(&KMsg{TAddr: taddr, ID: s.tab.selfNode.ID.ToHex(), Data: &PingReq{}})
 }
 
 func (s *SP2p) pingN() {
@@ -129,7 +136,7 @@ func (s *SP2p) pingN() {
 }
 
 func (s *SP2p) findNode(taddr string, n int) {
-	s.Write(&KMsg{TAddr: taddr, Data: &FindNodeReq{N: n}, FID: s.tab.selfNode.ID.ToHex()})
+	s.Write(&KMsg{TAddr: taddr, Data: &FindNodeReq{N: n}, ID: s.tab.selfNode.ID.ToHex()})
 }
 
 func (s *SP2p) findN() {
@@ -167,9 +174,8 @@ func (s *SP2p) accept() {
 	logger := GetLog()
 	for {
 		buf := make([]byte, cfg.MaxBufLen)
-		n, addr, err := s.conn.ReadFromUDP(buf)
+		n, err := s.conn.Read(buf)
 		if err == nil {
-			logger.Debug("udp message", "addr", addr.String())
 			logger.Debug(string(buf))
 			messages := kb.Next(buf[:n])
 			if messages == nil {

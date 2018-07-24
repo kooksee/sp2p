@@ -3,7 +3,6 @@ package sp2p
 import (
 	"time"
 	"github.com/inconshreveable/log15"
-	"net"
 	"github.com/kooksee/kdb"
 	"os"
 	"path/filepath"
@@ -57,10 +56,9 @@ type KConfig struct {
 
 	StoreAckNum int
 
-	Host          string
-	Port          int
-	AdvertiseAddr *net.UDPAddr
-	NodeId        string
+	Adds []string
+
+	NodeId string
 
 	Seeds []string
 	KvKey []byte
@@ -126,8 +124,8 @@ func DefaultKConfig() *KConfig {
 		PingNodeNum:         8,
 		FindNodeNUm:         20,
 
-		Host:           "localhost",
-		Port:           8080,
+		Adds: []string{"127.0.0.1:8080"},
+
 		NodesBackupKey: "nbk:",
 
 		PingTick:     time.NewTicker(10 * time.Minute),
@@ -138,9 +136,8 @@ func DefaultKConfig() *KConfig {
 		MinNodeSize: 100,
 		Version:     "1.0.0",
 
-		AdvertiseAddr: nil,
-		BucketSize:    16,
-		StoreAckNum:   2,
+		BucketSize:  16,
+		StoreAckNum: 2,
 
 		KvKey: []byte("kv:"),
 

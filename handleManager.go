@@ -37,7 +37,7 @@ func (h *HandleManager) Registry(handlers ... interface{}) {
 
 		name := h3.T()
 		if h.Contain(name) {
-			GetLog().Error("handle exist", "type", name, "desc", h3.String())
+			GetLog().Error("registry error handler exist", "type", name, "desc", h3.String())
 			panic("")
 		}
 		h.hmap[name] = h1

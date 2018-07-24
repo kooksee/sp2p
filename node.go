@@ -27,31 +27,24 @@ type Node struct {
 // NewNode creates a new node. It is mostly meant to be used for
 // testing purposes.
 func NewNode(id Hash, ip net.IP, udpPort uint16) *Node {
-	if ipv4 := ip.To4(); ipv4 != nil {
-		ip = ipv4
+	n := &Node{
+		IP:       ip,
+		UDP:      udpPort,
+		ID:       id,
+		addr:     fmt.Sprintf("%s:%d", ip.String(), udpPort),
+		updateAt: time.Now(),
+		udpAddr:  &net.UDPAddr{IP: ip, Port: int(udpPort)},
 	}
-	return &Node{
-		IP:         ip,
-		UDP:        udpPort,
-		ID:         id,
-		addr:       "",
-		updateAt:   time.Now(),
-		udpAddr:    nil,
-		nodeString: "",
-	}
+	n.nodeString = n.String()
+
+	return n
 }
 
 func (n *Node) Addr() *net.UDPAddr {
-	if n.udpAddr == nil {
-		n.udpAddr = &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
-	}
 	return n.udpAddr
 }
 
 func (n *Node) AddrString() string {
-	if n.addr == "" {
-		n.addr = n.Addr().String()
-	}
 	return n.addr
 }
 
@@ -96,10 +89,10 @@ func (n *Node) String() string {
 	return n.nodeString
 }
 
-var incompleteNodeURL = regexp.MustCompile("(?i)^(?:enode://)?([0-9a-f]+)$")
+var incompleteNodeURL = regexp.MustCompile("(?i)^(?:sp2p://)?([0-9a-f]+)$")
 
-//    enode://<hex node id>@10.3.58.6:30303?discport=30301
-//    enode://<hex node id>@10.3.58.6:30303?discport=30301
+//    sp2p://<hex node id>@10.3.58.6:30303?discport=30301
+//    sp2p://<hex node id>@10.3.58.6:30303?discport=30301
 func ParseNode(rawurl string) (*Node, error) {
 	if m := incompleteNodeURL.FindStringSubmatch(rawurl); m != nil {
 		id, err := HexID(m[1])
@@ -122,7 +115,7 @@ func parseComplete(rawurl string) (*Node, error) {
 		return nil, err
 	}
 	if u.Scheme != "sp2p" {
-		return nil, errors.New("invalid URL scheme, want \"enode\"")
+		return nil, errors.New("invalid URL scheme, want \"sp2p\"")
 	}
 	// Parse the Node ID from the user portion.
 	if u.User == nil {
