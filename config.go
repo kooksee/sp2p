@@ -47,9 +47,6 @@ type KConfig struct {
 	// 节点ID长度
 	HashBits int
 
-	ConnReadTimeout  time.Duration
-	ConnWriteTimeout time.Duration
-
 	NodesBackupKey string
 
 	BucketSize int
@@ -73,22 +70,18 @@ type KConfig struct {
 	l     log15.Logger
 }
 
-func (t *KConfig) InitLog(l log15.Logger) {
-	if l != nil {
-		t.l = l.New("package", "sp2p")
+func (t *KConfig) InitLog(l ... log15.Logger) {
+	if len(l) != 0 {
+		t.l = l[0].New("package", "sp2p")
 	} else {
-		l = log15.New("package", "sp2p")
-		ll, err := log15.LvlFromString("debug")
-		if err != nil {
-			panic(err.Error())
-		}
-		t.l.SetHandler(log15.LvlFilterHandler(ll, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
+		t.l = log15.New("package", "sp2p")
+		t.l.SetHandler(log15.LvlFilterHandler(log15.LvlDebug, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
 	}
 }
 
-func (t *KConfig) InitDb(db *kdb.KDB) {
-	if db != nil {
-		t.db = db
+func (t *KConfig) InitDb(db ... *kdb.KDB) {
+	if len(db) != 0 {
+		t.db = db[0]
 	} else {
 		kdb.InitKdb(filepath.Join("kdata", "db"))
 		t.db = kdb.GetKdb()
@@ -132,10 +125,8 @@ func DefaultKConfig() *KConfig {
 		HashBits:            len(Hash{}) * 8,
 		PingNodeNum:         8,
 		FindNodeNUm:         20,
-		ConnReadTimeout:     5 * time.Second,
-		ConnWriteTimeout:    5 * time.Second,
 
-		Host:           "0.0.0.0",
+		Host:           "localhost",
 		Port:           8080,
 		NodesBackupKey: "nbk:",
 
