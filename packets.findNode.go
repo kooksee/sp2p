@@ -4,16 +4,16 @@ type findNodeReq struct {
 	N int `json:"n,omitempty"`
 }
 
-func (t *findNodeReq) T() byte        { return FindNodeReqT }
-func (t *findNodeReq) String() string { return FindNodeReqS }
-func (t *findNodeReq) OnHandle(p *SP2p, msg *KMsg) {
+func (t *findNodeReq) T() byte        { return findNodeReqT }
+func (t *findNodeReq) String() string { return findNodeReqS }
+func (t *findNodeReq) OnHandle(p ISP2P, msg *KMsg) {
 
 	node, err := nodeFromKMsg(msg)
 	if err != nil {
 		getLog().Error("NodeFromKMsg error", "err", err)
 		return
 	}
-	go p.tab.UpdateNode(node)
+	go p.UpdateNode(node.string())
 
 	ns := make([]string, 0)
 
@@ -22,8 +22,9 @@ func (t *findNodeReq) OnHandle(p *SP2p, msg *KMsg) {
 		t.N = 16
 	}
 
-	for _, n := range p.tab.FindMinDisNodes(node.ID, t.N) {
-		ns = append(ns, n.String())
+	nodes, _ := p.FindMinDisNodes(node.ID.Hex(), t.N)
+	for _, n := range nodes {
+		ns = append(ns, n)
 	}
 	p.Write(&KMsg{TAddr: msg.FAddr, Data: &findNodeResp{Nodes: ns}})
 }
@@ -32,15 +33,15 @@ type findNodeResp struct {
 	Nodes []string `json:"nodes,omitempty"`
 }
 
-func (t *findNodeResp) T() byte        { return FindNodeRespT }
-func (t *findNodeResp) String() string { return FindNodeRespS }
-func (t *findNodeResp) OnHandle(p *SP2p, msg *KMsg) {
+func (t *findNodeResp) T() byte        { return findNodeRespT }
+func (t *findNodeResp) String() string { return findNodeRespS }
+func (t *findNodeResp) OnHandle(p ISP2P, msg *KMsg) {
 	for _, n := range t.Nodes {
 		node, err := NodeParse(n)
 		if err != nil {
 			getLog().Error("parse node error", "err", err)
 			continue
 		}
-		p.tab.UpdateNode(node)
+		p.UpdateNode(node.string())
 	}
 }

@@ -1,6 +1,6 @@
 package sp2p
 
-type IHandler func(*SP2p, *KMsg)
+type IHandler func(*sp2p, *KMsg)
 
 type IMessage interface {
 	// 获取类型

@@ -80,7 +80,7 @@ func hashAtDistance(a Hash, n int) (b Hash) {
 	return b
 }
 
-func nodeFromKMsg(msg *KMsg) (*Node, error) {
+func nodeFromKMsg(msg *KMsg) (*node, error) {
 	nid, err := HexID(msg.FID)
 	if err != nil {
 		return nil, err

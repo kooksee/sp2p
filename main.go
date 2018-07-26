@@ -8,10 +8,10 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func NewSP2p() *ISP2P {
+func NewSP2p() ISP2P {
 	logger := getLog()
 
-	p2p := &SP2p{
+	p2p := &sp2p{
 		txRC:      make(chan *KMsg, 10000),
 		txWC:      make(chan *KMsg, 10000),
 		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
@@ -44,7 +44,7 @@ func NewSP2p() *ISP2P {
 	return p2p
 }
 
-type SP2p struct {
+type sp2p struct {
 	ISP2P
 
 	tab       *table
@@ -56,7 +56,7 @@ type SP2p struct {
 }
 
 // 生成uuid的队列
-func (s *SP2p) genUUID() {
+func (s *sp2p) genUUID() {
 	for {
 		uid, err := uuid.NewV4()
 		if err == nil {
@@ -65,14 +65,14 @@ func (s *SP2p) genUUID() {
 	}
 }
 
-func (s *SP2p) GetAddr() string {
+func (s *sp2p) GetAddr() string {
 	if s.laddr == "" {
 		s.laddr = s.localAddr.String()
 	}
 	return s.laddr
 }
 
-func (s *SP2p) loop() {
+func (s *sp2p) loop() {
 	for {
 		select {
 		case <-cfg.FindNodeTick.C:
@@ -89,11 +89,11 @@ func (s *SP2p) loop() {
 	}
 }
 
-func (s *SP2p) writeTx(msg *KMsg) {
+func (s *sp2p) writeTx(msg *KMsg) {
 	s.txWC <- msg
 }
 
-func (s *SP2p) write(msg *KMsg) {
+func (s *sp2p) write(msg *KMsg) {
 	if msg.FAddr == "" {
 		msg.FAddr = s.GetAddr()
 	}
@@ -120,13 +120,13 @@ func (s *SP2p) write(msg *KMsg) {
 	}
 }
 
-func (s *SP2p) pingN() {
+func (s *sp2p) pingN() {
 	for _, n := range s.tab.findRandomNodes(cfg.PingNodeNum) {
 		s.writeTx(&KMsg{TAddr: n.addrString(), FID: s.tab.selfNode.ID.Hex(), Data: &pingReq{}})
 	}
 }
 
-func (s *SP2p) findN() {
+func (s *sp2p) findN() {
 	for _, b := range s.tab.buckets {
 		if b == nil || b.size() == 0 {
 			continue
@@ -135,7 +135,7 @@ func (s *SP2p) findN() {
 	}
 }
 
-func (s *SP2p) accept() {
+func (s *sp2p) accept() {
 	kb := newKBuffer()
 	logger := getLog()
 	for {
