@@ -8,7 +8,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func NewSP2p() ISP2P {
+func newSP2p() ISP2P {
 	logger := getLog()
 
 	p2p := &sp2p{

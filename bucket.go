@@ -65,9 +65,8 @@ func (b *bucket) addNodes(nodes ... *node) {
 		}
 		return nil
 	}); err != nil {
-
+		logger.Error("addNodes error", "err", err.Error())
 	}
-
 }
 
 // findNode check if the bucket already have this node, if so, return its index, otherwise, return -1

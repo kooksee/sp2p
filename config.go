@@ -72,6 +72,7 @@ type kConfig struct {
 	db    *kdb.KDB
 	l     log15.Logger
 	cache *cache.Cache
+	p2p   ISP2P
 }
 
 func (t *kConfig) InitLog(l ... log15.Logger) *kConfig {
@@ -82,6 +83,18 @@ func (t *kConfig) InitLog(l ... log15.Logger) *kConfig {
 		t.l.SetHandler(log15.LvlFilterHandler(log15.LvlDebug, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
 	}
 	return t
+}
+
+func (t *kConfig) InitP2P() *kConfig {
+	t.p2p = newSP2p()
+	return t
+}
+
+func (t *kConfig) GetP2P() ISP2P {
+	if t.p2p == nil {
+		panic("please init p2p")
+	}
+	return t.p2p
 }
 
 func (t *kConfig) InitDb(db ... *kdb.KDB) *kConfig {
