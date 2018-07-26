@@ -116,7 +116,7 @@ func getCfg() *kConfig {
 	return cfg
 }
 
-func DefaultKConfig() *kConfig {
+func DefaultConfig() *kConfig {
 	cfg = &kConfig{
 		MaxBufLen:           1024 * 16,
 		NtpFailureThreshold: 32,

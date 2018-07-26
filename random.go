@@ -215,3 +215,11 @@ func cRandBytes(numBytes int) []byte {
 	}
 	return b
 }
+
+func rand32(max uint32) uint32 {
+	if max == 0 {
+		return 0
+	}
+	mrand.Seed(time.Now().Unix())
+	return mrand.Uint32() % max
+}

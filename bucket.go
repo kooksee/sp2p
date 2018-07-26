@@ -80,7 +80,7 @@ func (b *bucket) random() *node {
 		return nil
 	}
 
-	val, _ := b.peers.Get(int(randUint(uint32(b.size()))))
+	val, _ := b.peers.Get(int(rand32(uint32(b.size()))))
 	return val.(*node)
 }
 

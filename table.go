@@ -23,7 +23,7 @@ type table struct {
 
 func newTable(id Hash, addr *net.UDPAddr) *table {
 
-	table := &table{selfNode: NewNode(id, addr.IP, uint16(addr.Port))}
+	table := &table{selfNode: newNode(id, addr.IP, uint16(addr.Port))}
 
 	for i := 0; i < nBuckets; i++ {
 		table.buckets[i] = newBuckets()
@@ -84,7 +84,7 @@ func (t *table) findRandomNodes(n int) []*node {
 		})
 	}
 
-	n = If(n > nBuckets, nBuckets, 5).(int)
+	n = cond(n > nBuckets, nBuckets, 5).(int)
 	if len(nodes) < n+5 {
 		return nodes
 	}
@@ -127,7 +127,7 @@ func (t *table) findMinDisNodes(target Hash, number int) []*node {
 
 	result := &nodesByDistance{
 		target:   target,
-		maxElems: If(number > nBuckets, nBuckets, 5).(int),
+		maxElems: cond(number > nBuckets, nBuckets, 5).(int),
 		entries:  make([]*node, 0),
 	}
 
