@@ -10,7 +10,11 @@ var (
 	hm     *handleManager
 )
 
-func GetHManager() *handleManager {
+func RegistryHandlers(handlers ... interface{}) {
+	getHManager().registry(handlers...)
+}
+
+func getHManager() *handleManager {
 	hmOnce.Do(func() {
 		hm = &handleManager{hmap: make(map[byte]reflect.Type)}
 	})
@@ -21,7 +25,7 @@ type handleManager struct {
 	hmap map[byte]reflect.Type
 }
 
-func (h *handleManager) Registry(handlers ... interface{}) {
+func (h *handleManager) registry(handlers ... interface{}) {
 	for _, handler := range handlers {
 
 		h1 := reflect.TypeOf(handler)

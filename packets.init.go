@@ -1,7 +1,7 @@
 package sp2p
 
 func init() {
-	GetHManager().Registry(
+	getHManager().registry(
 		pingReq{},
 		findNodeReq{},
 		findNodeResp{},

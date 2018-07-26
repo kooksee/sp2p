@@ -12,7 +12,7 @@ func (t *findNodeReq) OnHandle(p ISP2P, msg *KMsg) {
 		getLog().Error("NodeFromKMsg error", "err", err)
 		return
 	}
-	go p.UpdateNode(node.string())
+	go p.NodeUpdate(node.string())
 
 	ns := make([]string, 0)
 
@@ -41,6 +41,6 @@ func (t *findNodeResp) OnHandle(p ISP2P, msg *KMsg) {
 			getLog().Error("parse node error", "err", err)
 			continue
 		}
-		p.UpdateNode(node.string())
+		p.NodeUpdate(node.string())
 	}
 }

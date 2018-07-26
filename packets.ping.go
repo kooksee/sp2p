@@ -10,5 +10,5 @@ func (t *pingReq) OnHandle(p ISP2P, msg *KMsg) {
 		getLog().Error("NodeFromKMsg error", "err", err)
 		return
 	}
-	p.UpdateNode(node.string())
+	p.NodeUpdate(node.string())
 }
