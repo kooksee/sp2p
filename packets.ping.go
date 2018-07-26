@@ -1,12 +1,12 @@
 package sp2p
 
-type PingReq struct{}
-func (t *PingReq) T() byte          { return PingReqT }
-func (t *PingReq) String() string   { return PingReqS }
-func (t *PingReq) OnHandle(p *SP2p, msg *KMsg) {
-	node, err := NodeFromKMsg(msg)
+type pingReq struct{}
+func (t *pingReq) T() byte          { return PingReqT }
+func (t *pingReq) String() string   { return PingReqS }
+func (t *pingReq) OnHandle(p *SP2p, msg *KMsg) {
+	node, err := nodeFromKMsg(msg)
 	if err != nil {
-		GetLog().Error("NodeFromKMsg error", "err", err)
+		getLog().Error("NodeFromKMsg error", "err", err)
 		return
 	}
 	p.tab.UpdateNode(node)

@@ -38,7 +38,7 @@ func (a Hash) Equal(b Hash) bool {
 }
 
 // ToHex returns the hex form of the hash
-func (a Hash) ToHex() string {
+func (a Hash) Hex() string {
 	return hex.EncodeToString(a[:])
 }
 
@@ -71,11 +71,10 @@ func StringToHash(s string) Hash {
 }
 
 func HexToHash(hexS string) (Hash, error) {
-	byte, err := hex.DecodeString(hexS)
+	b, err := hex.DecodeString(hexS)
 	if err != nil {
 		return EmptyHash, err
 	}
 
-	hash := BytesToHash(byte)
-	return hash, nil
+	return BytesToHash(b), nil
 }

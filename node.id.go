@@ -21,7 +21,7 @@ func BytesID(b []byte) (Hash, error) {
 func MustBytesID(b []byte) Hash {
 	id, err := BytesID(b)
 	if err != nil {
-		panic(Errs("check node id error", err.Error()))
+		panic(errs("check node id error", err.Error()))
 	}
 	return id
 }
@@ -45,7 +45,7 @@ func HexID(in string) (Hash, error) {
 func MustHexID(in string) Hash {
 	id, err := HexID(in)
 	if err != nil {
-		panic(Errs("check nodeid error", err.Error()))
+		panic(errs("check nodeid error", err.Error()))
 	}
 	return id
 }

@@ -8,26 +8,42 @@ type IMessage interface {
 	// 描述信息
 	String() string
 	// 业务处理
-	OnHandle(*SP2p, *KMsg)
+	OnHandle(ISP2P, *KMsg)
 }
 
 type ITable interface {
 	// 路由表大小
-	Size() int
+	size() int
 	// 获得节点列表,把节点列表转换为[sp2p://<hex node id>@10.3.58.6:30303?discport=30301]的方式
-	GetRawNodes() []string
+	getRawNodes() []string
 	// 添加节点
-	AddNode(*Node)
+	addNode(*node)
 	// 更新节点
-	UpdateNode(*Node)
+	updateNode(*node)
 	// 删除节点
-	DeleteNode(Hash)
+	deleteNode(Hash)
 	// 随机得到路由表中的n个节点
-	FindRandomNodes(int) []*Node
+	findRandomNodes(int) []*node
 	// 查找距离最近的n个节点
-	FindMinDisNodes(Hash, int) []*Node
+	findMinDisNodes(Hash, int) []*node
 	// 查找目标相比本节点更近的节点
-	FindNodeWithTargetBySelf(Hash) []*Node
+	findNodeWithTargetBySelf(Hash) []*node
 	// 查找目标相比另一个节点的更近的节点
-	FindNodeWithTarget(Hash, Hash) []*Node
+	findNodeWithTarget(Hash, Hash) []*node
+}
+
+type ISP2P interface {
+	GetAddr() string
+	Write(msg *KMsg)
+	GetNode() string
+	GetNodes() []string
+	TableSize() int
+	UpdateNode(rawUrl string) error
+	AddNode(rawUrl string) error
+	FindMinDisNodes(targetID string, n int) (nodes []string, err error)
+	FindRandomNodes(n int) (nodes []string)
+	FindNodeWithTargetBySelf(d string) (nodes []string)
+	FindNodeWithTarget(targetId string, measure string) (nodes []string)
+	PingN()
+	FindN()
 }

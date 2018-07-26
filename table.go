@@ -10,59 +10,59 @@ import (
 	"github.com/emirpasic/gods/sets/hashset"
 )
 
-const NBuckets = len(Hash{})*8 + 1
+const nBuckets = len(Hash{})*8 + 1
 
-type Table struct {
+type table struct {
 	ITable
 
 	mutex sync.Mutex
 
-	buckets  [NBuckets]*bucket
-	selfNode *Node //info of local node
+	buckets  [nBuckets]*bucket
+	selfNode *node //info of local node
 }
 
-func newTable(id Hash, addr *net.UDPAddr) *Table {
+func newTable(id Hash, addr *net.UDPAddr) *table {
 
-	table := &Table{selfNode: NewNode(id, addr.IP, uint16(addr.Port))}
+	table := &table{selfNode: NewNode(id, addr.IP, uint16(addr.Port))}
 
-	for i := 0; i < NBuckets; i++ {
+	for i := 0; i < nBuckets; i++ {
 		table.buckets[i] = newBuckets()
 	}
 
 	return table
 }
 
-func (t *Table) GetNode() *Node {
+func (t *table) getNode() *node {
 	return t.selfNode
 }
 
-func (t *Table) GetAllNodes() []*Node {
-	nodes := make([]*Node, 0)
+func (t *table) getAllNodes() []*node {
+	nodes := make([]*node, 0)
 	for _, b := range t.buckets {
 		b.peers.Each(func(index int, value interface{}) {
-			nodes = append(nodes, value.(*Node))
+			nodes = append(nodes, value.(*node))
 		})
 	}
 	return nodes
 }
 
-func (t *Table) GetRawNodes() []string {
+func (t *table) getRawNodes() []string {
 	nodes := make([]string, 0)
-	for _, n := range t.GetAllNodes() {
-		nodes = append(nodes, n.String())
+	for _, n := range t.getAllNodes() {
+		nodes = append(nodes, n.string())
 	}
 	return nodes
 }
 
-func (t *Table) AddNode(node *Node) {
-	t.buckets[Logdist(t.selfNode.ID, node.ID)].addNodes(node)
+func (t *table) addNode(node *node) {
+	t.buckets[logdist(t.selfNode.ID, node.ID)].addNodes(node)
 }
 
-func (t *Table) UpdateNode(node *Node) {
-	t.buckets[Logdist(t.selfNode.ID, node.ID)].updateNodes(node)
+func (t *table) updateNode(node *node) {
+	t.buckets[logdist(t.selfNode.ID, node.ID)].updateNodes(node)
 }
 
-func (t *Table) Size() int {
+func (t *table) size() int {
 	n := 0
 	for _, b := range t.buckets {
 		n += b.size()
@@ -73,18 +73,18 @@ func (t *Table) Size() int {
 // ReadRandomNodes fills the given slice with random nodes from the
 // table. It will not write the same node more than once. The nodes in
 // the slice are copies and can be modified by the caller.
-func (t *Table) FindRandomNodes(n int) []*Node {
+func (t *table) findRandomNodes(n int) []*node {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	nodes := make([]*Node, 0)
+	nodes := make([]*node, 0)
 	for _, b := range t.buckets {
 		b.peers.Each(func(_ int, value interface{}) {
-			nodes = append(nodes, value.(*Node))
+			nodes = append(nodes, value.(*node))
 		})
 	}
 
-	n = If(n > NBuckets, NBuckets, 5).(int)
+	n = If(n > nBuckets, nBuckets, 5).(int)
 	if len(nodes) < n+5 {
 		return nodes
 	}
@@ -96,18 +96,18 @@ func (t *Table) FindRandomNodes(n int) []*Node {
 		nodeSet.Add(nodes[rand.Int31n(k)])
 	}
 
-	rnodes := make([]*Node, 0)
+	rnodes := make([]*node, 0)
 	for _, n := range nodeSet.Values() {
-		rnodes = append(rnodes, n.(*Node))
+		rnodes = append(rnodes, n.(*node))
 	}
 	return rnodes
 }
 
 // findNodeWithTarget find nodes that distance of target is less than measure with target
-func (t *Table) FindNodeWithTarget(target Hash, measure Hash) []*Node {
-	minDis := make([]*Node, 0)
-	for _, n := range t.FindMinDisNodes(target, cfg.NodeResponseNumber) {
-		if DistCmp(target, n.ID, measure) < 0 {
+func (t *table) findNodeWithTarget(target Hash, measure Hash) []*node {
+	minDis := make([]*node, 0)
+	for _, n := range t.findMinDisNodes(target, cfg.NodeResponseNumber) {
+		if distCmp(target, n.ID, measure) < 0 {
 			minDis = append(minDis, n)
 		}
 	}
@@ -115,25 +115,25 @@ func (t *Table) FindNodeWithTarget(target Hash, measure Hash) []*Node {
 	return minDis
 }
 
-func (t *Table) FindNodeWithTargetBySelf(target Hash) []*Node {
-	return t.FindNodeWithTarget(target, t.selfNode.ID)
+func (t *table) findNodeWithTargetBySelf(target Hash) []*node {
+	return t.findNodeWithTarget(target, t.selfNode.ID)
 }
 
-func (t *Table) DeleteNode(target Hash) {
-	t.buckets[Logdist(t.selfNode.ID, target)].deleteNodes(target)
+func (t *table) deleteNode(target Hash) {
+	t.buckets[logdist(t.selfNode.ID, target)].deleteNodes(target)
 }
 
-func (t *Table) FindMinDisNodes(target Hash, number int) []*Node {
+func (t *table) findMinDisNodes(target Hash, number int) []*node {
 
 	result := &nodesByDistance{
 		target:   target,
-		maxElems: If(number > NBuckets, NBuckets, 5).(int),
-		entries:  make([]*Node, 0),
+		maxElems: If(number > nBuckets, nBuckets, 5).(int),
+		entries:  make([]*node, 0),
 	}
 
 	for _, b := range t.buckets {
 		b.peers.Each(func(_ int, value interface{}) {
-			result.push(value.(*Node))
+			result.push(value.(*node))
 		})
 	}
 
@@ -143,15 +143,15 @@ func (t *Table) FindMinDisNodes(target Hash, number int) []*Node {
 // nodesByDistance is a list of nodes, ordered by
 // distance to to.
 type nodesByDistance struct {
-	entries  []*Node
+	entries  []*node
 	target   Hash
 	maxElems int
 }
 
 // push adds the given node to the list, keeping the total size below maxElems.
-func (h *nodesByDistance) push(n *Node) {
+func (h *nodesByDistance) push(n *node) {
 	ix := sort.Search(len(h.entries), func(i int) bool {
-		return DistCmp(h.target, h.entries[i].ID, n.ID) > 0
+		return distCmp(h.target, h.entries[i].ID, n.ID) > 0
 	})
 	if len(h.entries) < h.maxElems {
 		h.entries = append(h.entries, n)

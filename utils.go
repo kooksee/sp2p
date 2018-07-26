@@ -8,16 +8,16 @@ import (
 	"strings"
 )
 
-func Errs(err ... string) string {
+func errs(err ... string) string {
 	return strings.Join(err, "\n")
 }
 
-var Fmt = fmt.Sprintf
+var f = fmt.Sprintf
 
 // DistCmp compares the distances a->target and b->target.
 // Returns -1 if a is closer to target, 1 if b is closer to target
 // and 0 if they are equal.
-func DistCmp(target, a, b Hash) int {
+func distCmp(target, a, b Hash) int {
 	for i := range target {
 		da := a[i] ^ target[i]
 		db := b[i] ^ target[i]
@@ -30,11 +30,11 @@ func DistCmp(target, a, b Hash) int {
 	return 0
 }
 
-func Expired(ts int64) bool {
+func expired(ts int64) bool {
 	return time.Unix(ts, 0).Before(time.Now())
 }
 
-func TimeAdd(ts time.Duration) time.Time {
+func timeAdd(ts time.Duration) time.Time {
 	return time.Now().Add(ts)
 }
 
@@ -46,7 +46,7 @@ func If(cond bool, trueVal, falseVal interface{}) interface{} {
 }
 
 // logdist returns the logarithmic distance between a and b, log2(a ^ b).
-func Logdist(a, b Hash) int {
+func logdist(a, b Hash) int {
 	lz := 0
 	for i := range a {
 		x := a[i] ^ b[i]
@@ -61,7 +61,7 @@ func Logdist(a, b Hash) int {
 }
 
 // hashAtDistance returns a random hash such that logdist(a, b) == n
-func HashAtDistance(a Hash, n int) (b Hash) {
+func hashAtDistance(a Hash, n int) (b Hash) {
 	if n == 0 {
 		return a
 	}
@@ -80,7 +80,7 @@ func HashAtDistance(a Hash, n int) (b Hash) {
 	return b
 }
 
-func NodeFromKMsg(msg *KMsg) (*Node, error) {
+func nodeFromKMsg(msg *KMsg) (*Node, error) {
 	nid, err := HexID(msg.FID)
 	if err != nil {
 		return nil, err
@@ -92,20 +92,16 @@ func NodeFromKMsg(msg *KMsg) (*Node, error) {
 	return NewNode(nid, addr.IP, uint16(addr.Port)), nil
 }
 
-func MustNotErr(err error) {
+func mustNotErr(err error) {
 	if err == nil {
 		return
 	}
-	GetLog().Error("MustNotErr", "err", err)
+	getLog().Error("MustNotErr", "err", err)
 	panic(err.Error())
 }
 
-func NodesBackupKey(k []byte) []byte {
+func nodesBackupKey(k []byte) []byte {
 	return append([]byte(cfg.NodesBackupKey), k...)
-}
-
-func KvKey(k []byte) []byte {
-	return append([]byte(cfg.KvKey), k...)
 }
 
 // table of leading zero counts for bytes [0..255]

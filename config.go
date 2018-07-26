@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	cfg *KConfig
+	cfg *kConfig
 )
 
-type KConfig struct {
+type kConfig struct {
 	// 接收数据的最大缓存区
 	MaxBufLen int
 
@@ -66,59 +66,56 @@ type KConfig struct {
 	NodeId        string
 
 	Seeds []string
-	KvKey []byte
 
 	uuidC chan string
 	db    *kdb.KDB
 	l     log15.Logger
 }
 
-func (t *KConfig) InitLog(l log15.Logger) {
-	if l != nil {
-		t.l = l.New("package", "sp2p")
+func (t *kConfig) InitLog(l ... log15.Logger) *kConfig {
+	if len(l) != 0 {
+		t.l = l[0].New("package", "sp2p")
 	} else {
-		l = log15.New("package", "sp2p")
-		ll, err := log15.LvlFromString("debug")
-		if err != nil {
-			panic(err.Error())
-		}
-		t.l.SetHandler(log15.LvlFilterHandler(ll, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
+		t.l = log15.New("package", "sp2p")
+		t.l.SetHandler(log15.LvlFilterHandler(log15.LvlDebug, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
 	}
+	return t
 }
 
-func (t *KConfig) InitDb(db *kdb.KDB) {
-	if db != nil {
-		t.db = db
+func (t *kConfig) InitDb(db ... *kdb.KDB) *kConfig {
+	if len(db) != 0 {
+		t.db = db[0]
 	} else {
 		kdb.InitKdb(filepath.Join("kdata", "db"))
 		t.db = kdb.GetKdb()
 	}
+	return t
 }
 
-func GetLog() log15.Logger {
-	if GetCfg().l == nil {
+func getLog() log15.Logger {
+	if getCfg().l == nil {
 		panic("please init sp2p log")
 	}
-	return GetCfg().l
+	return getCfg().l
 }
 
-func GetDb() *kdb.KDB {
-	if GetCfg().db == nil {
-		GetLog().Error("please init sp2p db")
+func getDb() *kdb.KDB {
+	if getCfg().db == nil {
+		getLog().Error("please init sp2p db")
 		panic("")
 	}
-	return GetCfg().db
+	return getCfg().db
 }
 
-func GetCfg() *KConfig {
+func getCfg() *kConfig {
 	if cfg == nil {
 		panic("please init sp2p config")
 	}
 	return cfg
 }
 
-func DefaultKConfig() *KConfig {
-	cfg = &KConfig{
+func DefaultKConfig() *kConfig {
+	cfg = &kConfig{
 		MaxBufLen:           1024 * 16,
 		NtpFailureThreshold: 32,
 		NtpWarningCooldown:  10 * time.Minute,
@@ -150,8 +147,6 @@ func DefaultKConfig() *KConfig {
 		AdvertiseAddr: nil,
 		BucketSize:    16,
 		StoreAckNum:   2,
-
-		KvKey: []byte("kv:"),
 
 		uuidC: make(chan string, 500),
 	}

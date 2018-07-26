@@ -23,10 +23,10 @@ func checkClockDrift() {
 		return
 	}
 	if drift < -cfg.DriftThreshold || drift > cfg.DriftThreshold {
-		GetLog().Warn(fmt.Sprintf("System clock seems off by %v, which can prevent network connectivity", drift))
-		GetLog().Warn("Please enable network time synchronisation in system settings.")
+		getLog().Warn(fmt.Sprintf("System clock seems off by %v, which can prevent network connectivity", drift))
+		getLog().Warn("Please enable network time synchronisation in system settings.")
 	} else {
-		GetLog().Debug("NTP sanity check done", "drift", drift)
+		getLog().Debug("NTP sanity check done", "drift", drift)
 	}
 }
 

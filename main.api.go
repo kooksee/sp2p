@@ -4,28 +4,24 @@ func (s *SP2p) Write(msg *KMsg) {
 	go s.writeTx(msg)
 }
 
-func (s *SP2p) GetTable() *Table {
-	return s.tab
-}
-
 func (s *SP2p) GetNode() string {
-	return s.tab.selfNode.String()
+	return s.tab.selfNode.string()
 }
 
 func (s *SP2p) GetNodes() []string {
-	return s.tab.GetRawNodes()
+	return s.tab.getRawNodes()
 }
 
 func (s *SP2p) TableSize() int {
-	return s.tab.Size()
+	return s.tab.size()
 }
 
 func (s *SP2p) UpdateNode(rawUrl string) error {
-	n, err := ParseNode(rawUrl)
+	n, err := NodeParse(rawUrl)
 	if err != nil {
 		return err
 	}
-	s.tab.UpdateNode(n)
+	s.tab.updateNode(n)
 	return nil
 }
 func (s *SP2p) DeleteNode(id string) error {
@@ -33,16 +29,16 @@ func (s *SP2p) DeleteNode(id string) error {
 	if err != nil {
 		return err
 	}
-	s.tab.DeleteNode(n)
+	s.tab.deleteNode(n)
 	return nil
 }
 
 func (s *SP2p) AddNode(rawUrl string) error {
-	n, err := ParseNode(rawUrl)
+	n, err := NodeParse(rawUrl)
 	if err != nil {
 		return err
 	}
-	s.tab.AddNode(n)
+	s.tab.addNode(n)
 	return nil
 }
 
@@ -52,29 +48,29 @@ func (s *SP2p) FindMinDisNodes(targetID string, n int) (nodes []string, err erro
 		return nil, err
 	}
 
-	for _, n := range s.tab.FindMinDisNodes(h, n) {
-		nodes = append(nodes, n.String())
+	for _, n := range s.tab.findMinDisNodes(h, n) {
+		nodes = append(nodes, n.string())
 	}
 	return nodes, nil
 }
 
 func (s *SP2p) FindRandomNodes(n int) (nodes []string) {
-	for _, n := range s.tab.FindRandomNodes(n) {
-		nodes = append(nodes, n.String())
+	for _, n := range s.tab.findRandomNodes(n) {
+		nodes = append(nodes, n.string())
 	}
 	return
 }
 
 func (s *SP2p) FindNodeWithTargetBySelf(d string) (nodes []string) {
-	for _, n := range s.tab.FindNodeWithTargetBySelf(StringToHash(d)) {
-		nodes = append(nodes, n.String())
+	for _, n := range s.tab.findNodeWithTargetBySelf(StringToHash(d)) {
+		nodes = append(nodes, n.string())
 	}
 	return
 }
 
 func (s *SP2p) FindNodeWithTarget(targetId string, measure string) (nodes []string) {
-	for _, n := range s.tab.FindNodeWithTarget(StringToHash(targetId), StringToHash(measure)) {
-		nodes = append(nodes, n.String())
+	for _, n := range s.tab.findNodeWithTarget(StringToHash(targetId), StringToHash(measure)) {
+		nodes = append(nodes, n.string())
 	}
 	return
 }
@@ -83,35 +79,6 @@ func (s *SP2p) PingN() {
 	go s.pingN()
 }
 
-func (s *SP2p) PingNode(taddr string) {
-	go s.pingNode(taddr)
-}
-
 func (s *SP2p) FindN() {
 	go s.findN()
-}
-
-func (s *SP2p) FindNode(taddr string, n int) {
-	go s.findNode(taddr, n)
-}
-
-// 获得本地存储的value
-func (s *SP2p) GetValue(k []byte) ([]byte,error) {
-	return s.getValue(k)
-}
-
-func (s *SP2p) KVSetReq(req *KVSetReq) {
-	go s.kvSetReq(req)
-}
-
-func (s *SP2p) KVGetReq(req *KVGetReq) {
-	go s.kvGetReq(req)
-}
-
-func (s *SP2p) GKVSetReq(req *GKVSetReq) {
-	go s.gkvSetReq(req)
-}
-
-func (s *SP2p) GKVGetReq(req *GKVGetReq) {
-	go s.gkvGetReq(req)
 }

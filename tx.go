@@ -16,7 +16,7 @@ type KMsg struct {
 func (t *KMsg) Decode(msg []byte) error {
 	dt := msg[0]
 	if !hm.Contain(dt) {
-		return errors.New(Fmt("kmsg type %s is nonexistent", dt))
+		return errors.New(f("kmsg type %s is nonexistent", dt))
 	}
 
 	t.Data = hm.GetHandler(dt)
