@@ -9,7 +9,7 @@ import (
 	"errors"
 )
 
-const BucketPrefix = "bkt"
+var bucketPrefix = []byte("bkt")
 
 type bucket struct {
 	peers *arraylist.List
@@ -19,11 +19,11 @@ type bucket struct {
 func newBuckets() *bucket {
 	return &bucket{
 		peers: arraylist.New(),
-		h:     GetDb().KHash(BucketPrefix),
+		h:     getDb().KHash(bucketPrefix),
 	}
 }
 
-func (b *bucket) updateNodes(nodes ... *Node) {
+func (b *bucket) updateNodes(nodes ... *node) {
 	for _, n := range nodes {
 		n.updateAt = time.Now()
 		b.addNodes(n)
@@ -31,22 +31,22 @@ func (b *bucket) updateNodes(nodes ... *Node) {
 }
 
 // addNode add node to bucket, if bucket is full, will remove an old one
-func (b *bucket) addNodes(nodes ... *Node) {
+func (b *bucket) addNodes(nodes ... *node) {
 
-	logger := GetLog()
+	logger := getLog()
 
 	// 把最活跃的放到最前面,然后移除最不活跃的
-	if err := b.h.BatchUpdate(func(k *kdb.KHBatch) error {
+	if err := b.h.WithTx(func(k *kdb.KHBatch) error {
 		for _, node := range nodes {
-			logger.Info("add node", "node", node.String())
+			logger.Info("add node", "node", node.string())
 			b.peers.Add(node)
-			if err := k.Set(NodesBackupKey(node.ID.Bytes()), []byte(node.String())); err != nil {
+			if err := k.Set(nodesBackupKey(node.ID.Bytes()), []byte(node.string())); err != nil {
 				logger.Error("add peer error", "err", err)
 				continue
 			}
 		}
 
-		b.peers.Sort(func(a, b interface{}) int { return int(b.(*Node).updateAt.Sub(a.(*Node).updateAt)) })
+		b.peers.Sort(func(a, b interface{}) int { return int(b.(*node).updateAt.Sub(a.(*node).updateAt)) })
 		size := b.peers.Size()
 		if size < cfg.BucketSize {
 			return errors.New("")
@@ -58,51 +58,50 @@ func (b *bucket) addNodes(nodes ... *Node) {
 				continue
 			}
 			b.peers.Remove(i)
-			if err := k.MDel(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
+			if err := k.MDel(nodesBackupKey(val.(*node).ID.Bytes())); err != nil {
 				logger.Error("delete peer error", "err", err)
 				continue
 			}
 		}
 		return nil
 	}); err != nil {
-
+		logger.Error("addNodes error", "err", err.Error())
 	}
-
 }
 
 // findNode check if the bucket already have this node, if so, return its index, otherwise, return -1
-func (b *bucket) findNode(node *Node) int {
+func (b *bucket) findNode(node *node) int {
 	return b.peers.IndexOf(node)
 }
 
-func (b *bucket) Random() *Node {
+func (b *bucket) random() *node {
 	if b.size() == 0 {
 		return nil
 	}
 
-	val, _ := b.peers.Get(int(randUint(uint32(b.size()))))
-	return val.(*Node)
+	val, _ := b.peers.Get(int(rand32(uint32(b.size()))))
+	return val.(*node)
 }
 
 func (b *bucket) deleteNodes(targets ... Hash) {
-	if err := b.h.BatchUpdate(func(k *kdb.KHBatch) error {
-		for _, node := range targets {
-			if a := b.peers.IndexOf(node); a != -1 {
+	if err := b.h.WithTx(func(k *kdb.KHBatch) error {
+		for _, n := range targets {
+			if a := b.peers.IndexOf(n); a != -1 {
 				val, bl := b.peers.Get(a)
 				if !bl {
 					continue
 				}
-				if err := k.MDel(NodesBackupKey(val.(*Node).ID.Bytes())); err != nil {
-					GetLog().Error("deleteNodes error", "err", err)
+				if err := k.MDel(nodesBackupKey(val.(*node).ID.Bytes())); err != nil {
+					getLog().Error("deleteNodes error", "err", err)
 					continue
 				}
-				GetLog().Info("delete node: %s", hex.EncodeToString(node.Bytes()))
+				getLog().Info("delete node: %s", hex.EncodeToString(n.Bytes()))
 				b.peers.Remove(a)
 			}
 		}
 		return nil
 	}); err != nil {
-		GetLog().Error("update peer", "err", err)
+		getLog().Error("update peer", "err", err)
 	}
 }
 

@@ -2,18 +2,19 @@ package sp2p
 
 import (
 	"time"
-	log "github.com/inconshreveable/log15"
+	"github.com/inconshreveable/log15"
 	"net"
 	"github.com/kooksee/kdb"
 	"os"
 	"path/filepath"
+	"github.com/patrickmn/go-cache"
 )
 
 var (
-	cfg *KConfig
+	cfg *kConfig
 )
 
-type KConfig struct {
+type kConfig struct {
 	// 接收数据的最大缓存区
 	MaxBufLen int
 
@@ -25,7 +26,6 @@ type KConfig struct {
 	NtpPool string
 	// Number of measurements to do against the NTP server
 	NtpChecks int
-
 	// Allowed clock drift before warning user
 	DriftThreshold time.Duration
 
@@ -53,8 +53,6 @@ type KConfig struct {
 
 	NodesBackupKey string
 
-	DELIMITER byte
-
 	BucketSize int
 
 	MaxNodeSize int
@@ -69,59 +67,70 @@ type KConfig struct {
 	NodeId        string
 
 	Seeds []string
-	KvKey []byte
 
 	uuidC chan string
 	db    *kdb.KDB
-	l     log.Logger
+	l     log15.Logger
+	cache *cache.Cache
+	p2p   ISP2P
 }
 
-func (t *KConfig) InitLog(l log.Logger) {
-	if l != nil {
-		t.l = l.New("package", "sp2p")
+func (t *kConfig) InitLog(l ... log15.Logger) *kConfig {
+	if len(l) != 0 {
+		t.l = l[0].New("package", "sp2p")
 	} else {
-		l = log.New("package", "sp2p")
-		ll, err := log.LvlFromString("debug")
-		if err != nil {
-			panic(err.Error())
-		}
-		t.l.SetHandler(log.LvlFilterHandler(ll, log.StreamHandler(os.Stdout, log.TerminalFormat())))
+		t.l = log15.New("package", "sp2p")
+		t.l.SetHandler(log15.LvlFilterHandler(log15.LvlDebug, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
 	}
+	return t
 }
 
-func (t *KConfig) InitDb(db *kdb.KDB) {
-	if db != nil {
-		t.db = db
+func (t *kConfig) InitP2P() *kConfig {
+	t.p2p = newSP2p()
+	return t
+}
+
+func (t *kConfig) GetP2P() ISP2P {
+	if t.p2p == nil {
+		panic("please init p2p")
+	}
+	return t.p2p
+}
+
+func (t *kConfig) InitDb(db ... *kdb.KDB) *kConfig {
+	if len(db) != 0 {
+		t.db = db[0]
 	} else {
 		kdb.InitKdb(filepath.Join("kdata", "db"))
 		t.db = kdb.GetKdb()
 	}
+	return t
 }
 
-func GetLog() log.Logger {
-	if GetCfg().l == nil {
+func getLog() log15.Logger {
+	if getCfg().l == nil {
 		panic("please init sp2p log")
 	}
-	return GetCfg().l
+	return getCfg().l
 }
 
-func GetDb() *kdb.KDB {
-	if GetCfg().db == nil {
-		GetLog().Error("please init sp2p db")
+func getDb() *kdb.KDB {
+	if getCfg().db == nil {
+		getLog().Error("please init sp2p db")
 		panic("")
 	}
-	return GetCfg().db
+	return getCfg().db
 }
 
-func GetCfg() *KConfig {
+func getCfg() *kConfig {
 	if cfg == nil {
 		panic("please init sp2p config")
 	}
 	return cfg
 }
 
-func DefaultKConfig() *KConfig {
-	cfg = &KConfig{
+func DefaultConfig() *kConfig {
+	cfg = &kConfig{
 		MaxBufLen:           1024 * 16,
 		NtpFailureThreshold: 32,
 		NtpWarningCooldown:  10 * time.Minute,
@@ -141,7 +150,6 @@ func DefaultKConfig() *KConfig {
 		Host:           "0.0.0.0",
 		Port:           8080,
 		NodesBackupKey: "nbk:",
-		DELIMITER:      '\n',
 
 		PingTick:     time.NewTicker(10 * time.Minute),
 		FindNodeTick: time.NewTicker(1 * time.Hour),
@@ -155,9 +163,8 @@ func DefaultKConfig() *KConfig {
 		BucketSize:    16,
 		StoreAckNum:   2,
 
-		KvKey: []byte("kv:"),
-
-		uuidC: make(chan string, 10000),
+		uuidC: make(chan string, 500),
+		cache: cache.New(10*time.Minute, 30*time.Minute),
 	}
 
 	return cfg

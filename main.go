@@ -8,10 +8,10 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func NewSP2p() *SP2p {
-	logger := GetLog()
+func newSP2p() ISP2P {
+	logger := getLog()
 
-	p2p := &SP2p{
+	p2p := &sp2p{
 		txRC:      make(chan *KMsg, 10000),
 		txWC:      make(chan *KMsg, 10000),
 		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
@@ -26,12 +26,12 @@ func NewSP2p() *SP2p {
 	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())
 
 	if conn, err := net.ListenUDP("udp", p2p.localAddr); err != nil {
-		panic(Errs(Fmt("udp %s listen error", p2p.localAddr), err.Error()))
+		panic(errs(f("udp %s listen error", p2p.localAddr), err.Error()))
 	} else {
 		p2p.conn = conn
 	}
 
-	nodeId := MustHexID(If(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
+	nodeId := MustHexID(cond(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
 	logger.Debug("node id", "id", nodeId)
 
 	logger.Debug("create table", "table")
@@ -44,8 +44,10 @@ func NewSP2p() *SP2p {
 	return p2p
 }
 
-type SP2p struct {
-	tab       *Table
+type sp2p struct {
+	ISP2P
+
+	tab       *table
 	txRC      chan *KMsg
 	txWC      chan *KMsg
 	conn      *net.UDPConn
@@ -54,7 +56,7 @@ type SP2p struct {
 }
 
 // 生成uuid的队列
-func (s *SP2p) genUUID() {
+func (s *sp2p) genUUID() {
 	for {
 		uid, err := uuid.NewV4()
 		if err == nil {
@@ -63,14 +65,14 @@ func (s *SP2p) genUUID() {
 	}
 }
 
-func (s *SP2p) GetAddr() string {
+func (s *sp2p) GetAddr() string {
 	if s.laddr == "" {
 		s.laddr = s.localAddr.String()
 	}
 	return s.laddr
 }
 
-func (s *SP2p) loop() {
+func (s *sp2p) loop() {
 	for {
 		select {
 		case <-cfg.FindNodeTick.C:
@@ -87,13 +89,16 @@ func (s *SP2p) loop() {
 	}
 }
 
-func (s *SP2p) writeTx(msg *KMsg) {
+func (s *sp2p) writeTx(msg *KMsg) {
 	s.txWC <- msg
 }
 
-func (s *SP2p) write(msg *KMsg) {
+func (s *sp2p) write(msg *KMsg) {
 	if msg.FAddr == "" {
 		msg.FAddr = s.GetAddr()
+	}
+	if msg.FID == "" {
+		msg.FID = s.tab.selfNode.ID.Hex()
 	}
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
@@ -102,104 +107,84 @@ func (s *SP2p) write(msg *KMsg) {
 		msg.Version = cfg.Version
 	}
 	if msg.TAddr == "" {
-		GetLog().Error("target udp addr does not exist")
+		getLog().Error("target node addr is nonexistent")
+		return
+	}
+	if msg.TID == "" {
+		getLog().Error("target node id is nonexistent")
 		return
 	}
 
 	addr, err := net.ResolveUDPAddr("udp", msg.TAddr)
 	if err != nil {
-		GetLog().Error("ResolveUDPAddr error", "err", err)
+		getLog().Error("ResolveUDPAddr error", "err", err)
 		return
 	}
 
 	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
-		GetLog().Error("WriteToUDP error", "err", err)
+		getLog().Error("WriteToUDP error", "err", err)
 		return
 	}
 }
 
-func (s *SP2p) pingNode(taddr string) {
-	s.Write(&KMsg{TAddr: taddr, FID: s.tab.selfNode.ID.ToHex(), Data: &PingReq{}})
-}
-
-func (s *SP2p) pingN() {
-	for _, n := range s.tab.FindRandomNodes(cfg.PingNodeNum) {
-		s.pingNode(n.AddrString())
+func (s *sp2p) pingN() {
+	for _, n := range s.tab.findRandomNodes(cfg.PingNodeNum) {
+		s.writeTx(&KMsg{TAddr: n.addrString(), FID: s.tab.selfNode.ID.Hex(), Data: &pingReq{}})
 	}
 }
 
-func (s *SP2p) findNode(taddr string, n int) {
-	s.Write(&KMsg{TAddr: taddr, Data: &FindNodeReq{N: n}, FID: s.tab.selfNode.ID.ToHex()})
-}
-
-func (s *SP2p) findN() {
+func (s *sp2p) findN() {
 	for _, b := range s.tab.buckets {
 		if b == nil || b.size() == 0 {
 			continue
 		}
-		s.findNode(b.Random().AddrString(), cfg.FindNodeNUm)
+		s.writeTx(&KMsg{TAddr: b.random().addrString(), Data: &findNodeReq{N: cfg.FindNodeNUm}, FID: s.tab.selfNode.ID.Hex()})
 	}
 }
 
-func (s *SP2p) kvSetReq(req *KVSetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
-}
-
-func (s *SP2p) kvGetReq(req *KVGetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
-}
-
-func (s *SP2p) gkvSetReq(req *GKVSetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
-}
-
-func (s *SP2p) gkvGetReq(req *GKVGetReq) {
-	s.writeTx(&KMsg{Data: req, TAddr: s.GetAddr()})
-}
-
-// 获得本地存储的value
-func (s *SP2p) getValue(k []byte) []byte {
-	return GetDb().KHash(kvPrefix).Get(k)
-}
-
-func (s *SP2p) accept() {
-	kb := NewKBuffer()
-	logger := GetLog()
+func (s *sp2p) accept() {
+	kb := newKBuffer()
+	logger := getLog()
 	for {
 		buf := make([]byte, cfg.MaxBufLen)
 		n, addr, err := s.conn.ReadFromUDP(buf)
-		if err == nil {
-			logger.Debug("udp message", "addr", addr.String())
-			logger.Debug(string(buf))
-			messages := kb.Next(buf[:n])
-			if messages == nil {
-				continue
+		if err != nil {
+			if strings.Contains(err.Error(), "timeout") {
+				logger.Error("timeout", "err", err)
+			} else if err == io.EOF {
+				logger.Error("udp read eof ", "err", err)
+				break
+			} else if err != nil {
+				logger.Error("udp read error ", "err", err)
 			}
-
-			for _, m := range messages {
-				if m == nil || len(m) == 0 {
-					continue
-				}
-
-				msg := &KMsg{}
-				if err := msg.Decode(m); err != nil {
-					logger.Error("tx msg decode error", "err", err, "method", "sp2p.accept")
-					continue
-				}
-
-				s.txRC <- msg
-			}
+			time.Sleep(time.Second * 2)
+			continue
+		}
+		logger.Debug("udp message", "addr", addr.String())
+		logger.Debug(string(buf))
+		messages := kb.Next(buf[:n])
+		if messages == nil {
 			continue
 		}
 
-		if strings.Contains(err.Error(), "timeout") {
-			GetLog().Error("timeout", "err", err)
-		} else if err == io.EOF {
-			GetLog().Error("udp read eof ", "err", err)
-		} else if err != nil {
-			GetLog().Error("udp read error ", "err", err)
-		}
+		for _, m := range messages {
+			if m == nil || len(m) == 0 {
+				continue
+			}
 
-		time.Sleep(time.Second * 2)
+			msg := &KMsg{}
+			if err := msg.Decode(m); err != nil {
+				logger.Error("kmsg decode error", "err", err.Error(), "method", "sp2p.accept")
+				continue
+			}
+
+			// 检查该ID是否已经存在过,防止数据重复发送
+			if _, b := getCfg().cache.Get(msg.ID); b {
+				continue
+			} else {
+				getCfg().cache.SetDefault(msg.ID, true)
+				s.txRC <- msg
+			}
+		}
 	}
 }

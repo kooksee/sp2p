@@ -5,22 +5,22 @@ import (
 	"sync"
 )
 
-func NewKBuffer() *KBuffer {
-	return &KBuffer{dmt: []byte{'\n'}}
+func newKBuffer() *kBuffer {
+	return &kBuffer{dmt: []byte("\n")}
 }
 
-type KBuffer struct {
+type kBuffer struct {
 	buf []byte
 	dmt []byte
 	sync.RWMutex
 }
 
-func (t *KBuffer) SetDmt(dmt []byte) *KBuffer {
+func (t *kBuffer) SetDmt(dmt []byte) *kBuffer {
 	t.dmt = dmt
 	return t
 }
 
-func (t *KBuffer) Next(b []byte) [][]byte {
+func (t *kBuffer) Next(b []byte) [][]byte {
 	t.Lock()
 	defer t.Unlock()
 
@@ -34,11 +34,11 @@ func (t *KBuffer) Next(b []byte) [][]byte {
 		return nil
 	}
 
-	if !bytes.Contains(t.buf, t.delim) {
+	if !bytes.Contains(t.buf, t.dmt) {
 		return nil
 	}
 
-	d := bytes.Split(t.buf, t.delim)
+	d := bytes.Split(t.buf, t.dmt)
 	if len(d) < 1 {
 		return nil
 	}

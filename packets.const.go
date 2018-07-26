@@ -1,30 +1,12 @@
 package sp2p
 
 const (
-	PingReqT = byte(1)
-	PingReqS = "ping req"
+	pingReqT = byte(0x1)
+	pingReqS = "ping req"
 
-	FindNodeReqT = byte(2)
-	FindNodeReqS = "find node req"
+	findNodeReqT = byte(0x2)
+	findNodeReqS = "find node req"
 
-	FindNodeRespT = byte(0x3)
-	FindNodeRespS = "find node resp"
-
-	KVSetReqT = byte(0x4)
-	KVSetReqS = "kv set req"
-
-	KVGetReqT = byte(0x5)
-	KVGetReqS = "kv get req"
-
-	KVGetRespT = byte(0x6)
-	KVGetRespS = "kv get resp"
-
-	GKVSetReqT = byte(0x7)
-	GKVSetReqS = "gossip kv set req"
-
-	GKVGetReqT = byte(0x8)
-	GKVGetReqS = "gossip kv get req"
-
-	GKVGetRespT = byte(0x9)
-	GKVGetRespS = "gossip kv get resp"
+	findNodeRespT = byte(0x3)
+	findNodeRespS = "find node resp"
 )

@@ -10,12 +10,12 @@ import (
 	"time"
 )
 
-// Node represents a host on the network.
-// The fields of Node may not be modified.
-type Node struct {
-	IP  net.IP // len 4 for IPv4 or 16 for IPv6
-	UDP uint16 // port numbers
-	ID  Hash   // the node's public key
+// node represents a host on the network.
+// The fields of node may not be modified.
+type node struct {
+	IP   net.IP // len 4 for IPv4 or 16 for IPv6
+	Port uint16 // port numbers
+	ID   Hash   // the node's public key
 
 	// Time when the node was added to the table.
 	updateAt   time.Time
@@ -24,48 +24,41 @@ type Node struct {
 	nodeString string
 }
 
-// NewNode creates a new node. It is mostly meant to be used for
+// Newnode creates a new node. It is mostly meant to be used for
 // testing purposes.
-func NewNode(id Hash, ip net.IP, udpPort uint16) *Node {
-	if ipv4 := ip.To4(); ipv4 != nil {
-		ip = ipv4
+func newNode(id Hash, ip net.IP, udpPort uint16) *node {
+	n := &node{
+		IP:       ip,
+		Port:     udpPort,
+		ID:       id,
+		addr:     fmt.Sprintf("%s:%d", ip.String(), udpPort),
+		updateAt: time.Now(),
+		udpAddr:  &net.UDPAddr{IP: ip, Port: int(udpPort)},
 	}
-	return &Node{
-		IP:         ip,
-		UDP:        udpPort,
-		ID:         id,
-		addr:       "",
-		updateAt:   time.Now(),
-		udpAddr:    nil,
-		nodeString: "",
-	}
+	n.nodeString = n.string()
+
+	return n
 }
 
-func (n *Node) Addr() *net.UDPAddr {
-	if n.udpAddr == nil {
-		n.udpAddr = &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
-	}
+func (n *node) adds() *net.UDPAddr {
 	return n.udpAddr
 }
 
-func (n *Node) AddrString() string {
-	if n.addr == "" {
-		n.addr = n.Addr().String()
-	}
+func (n *node) addrString() string {
 	return n.addr
 }
 
 // Incomplete returns true for nodes with no IP address.
-func (n *Node) Incomplete() bool {
+func (n *node) incomplete() bool {
 	return n.IP == nil
 }
 
 // checks whether n is a valid complete node.
-func (n *Node) validateComplete() error {
-	if n.Incomplete() {
+func (n *node) validateComplete() error {
+	if n.incomplete() {
 		return errors.New("incomplete node")
 	}
-	if n.UDP == 0 {
+	if n.Port == 0 {
 		return errors.New("missing UDP port")
 	}
 
@@ -76,40 +69,42 @@ func (n *Node) validateComplete() error {
 	return nil
 }
 
-// The string representation of a Node is a URL.
-// Please see ParseNode for a description of the format.
-func (n *Node) String() string {
-	if n.nodeString == "" {
-		u := url.URL{Scheme: "enode"}
-		if n.Incomplete() {
-			u.Host = Fmt("%x", n.ID[:])
-		} else {
-			//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
-			u.User = url.User(Fmt("%x", n.ID[:]))
-			u.Host = n.AddrString()
-		}
-		n.nodeString = u.String()
+// The string representation of a node is a URL.
+// Please see Parsenode for a description of the format.
+func (n *node) string() string {
+	if n.nodeString != "" {
+		return n.nodeString
 	}
+
+	u := url.URL{Scheme: "sp2p"}
+	if n.incomplete() {
+		u.Host = f("%x", n.ID[:])
+	} else {
+		//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
+		u.User = url.User(f("%x", n.ID[:]))
+		u.Host = n.addrString()
+	}
+	n.nodeString = u.String()
 
 	return n.nodeString
 }
 
-var incompleteNodeURL = regexp.MustCompile("(?i)^(?:enode://)?([0-9a-f]+)$")
+var incompletenodeURL = regexp.MustCompile("(?i)^(?:sp2p://)?([0-9a-f]+)$")
 
-//    enode://<hex node id>@10.3.58.6:30303?discport=30301
-//    enode://<hex node id>@10.3.58.6:30303?discport=30301
-func ParseNode(rawurl string) (*Node, error) {
-	if m := incompleteNodeURL.FindStringSubmatch(rawurl); m != nil {
+//    sp2p://<hex node id>@10.3.58.6:30303?discport=30301
+//    sp2p://<hex node id>@10.3.58.6:30303?discport=30301
+func NodeParse(rawurl string) (*node, error) {
+	if m := incompletenodeURL.FindStringSubmatch(rawurl); m != nil {
 		id, err := HexID(m[1])
 		if err != nil {
 			return nil, fmt.Errorf("invalid node ID (%v)", err)
 		}
-		return NewNode(id, nil, 0), nil
+		return newNode(id, nil, 0), nil
 	}
 	return parseComplete(rawurl)
 }
 
-func parseComplete(rawurl string) (*Node, error) {
+func parseComplete(rawurl string) (*node, error) {
 	var (
 		id               Hash
 		ip               net.IP
@@ -119,10 +114,10 @@ func parseComplete(rawurl string) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if u.Scheme != "enode" {
-		return nil, errors.New("invalid URL scheme, want \"enode\"")
+	if u.Scheme != "sp2p" {
+		return nil, errors.New("invalid URL scheme, want \"sp2p\"")
 	}
-	// Parse the Node ID from the user portion.
+	// Parse the node ID from the user portion.
 	if u.User == nil {
 		return nil, errors.New("does not contain node ID")
 	}
@@ -154,14 +149,14 @@ func parseComplete(rawurl string) (*Node, error) {
 		}
 	}
 
-	return NewNode(id, ip, uint16(udpPort)), nil
+	return newNode(id, ip, uint16(udpPort)), nil
 }
 
-// MustParseNode parses a node URL. It panics if the URL is not valid.
-func MustParseNode(rawUrl string) *Node {
-	n, err := ParseNode(rawUrl)
+// MustNodeParse parses a node URL. It panics if the URL is not valid.
+func MustNodeParse(rawUrl string) *node {
+	n, err := NodeParse(rawUrl)
 	if err != nil {
-		panic(Errs("invalid node URL", err.Error()))
+		panic(errs("invalid node URL", err.Error()))
 	}
 	return n
 }

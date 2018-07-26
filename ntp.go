@@ -23,10 +23,10 @@ func checkClockDrift() {
 		return
 	}
 	if drift < -cfg.DriftThreshold || drift > cfg.DriftThreshold {
-		GetLog().Warn(fmt.Sprintf("System clock seems off by %v, which can prevent network connectivity", drift))
-		GetLog().Warn("Please enable network time synchronisation in system settings.")
+		getLog().Warn(fmt.Sprintf("System clock seems off by %v, which can prevent network connectivity", drift))
+		getLog().Warn("Please enable network time synchronisation in system settings.")
 	} else {
-		GetLog().Debug("NTP sanity check done", "drift", drift)
+		getLog().Debug("NTP sanity check done", "drift", drift)
 	}
 }
 
@@ -49,7 +49,7 @@ func sntpDrift(measurements int) (time.Duration, error) {
 	request[0] = 3<<3 | 3
 
 	// Execute each of the measurements
-	drifts := []time.Duration{}
+	var drifts []time.Duration
 	for i := 0; i < measurements+2; i++ {
 		// Dial the NTP server and send the time retrieval request
 		conn, err := net.DialUDP("udp", nil, addr)
