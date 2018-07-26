@@ -33,18 +33,19 @@ type ITable interface {
 }
 
 type ISP2P interface {
-	GetAddr() string
 	Write(msg *KMsg)
-	GetSelfNode() string
-	GetNodes() []string
-	TableSize() int
-	UpdateNode(rawUrl string) error
-	AddNode(rawUrl string) error
+	Broadcast(msg *KMsg)
+
+	SelfNode() string
+	NodeDumps() []string
+	NodeUpdate(rawUrl ... string) error
+	NodeDel(nodeID ... string) error
+
 	FindMinDisNodes(targetID string, n int) (nodes []string, err error)
 	FindRandomNodes(n int) (nodes []string)
-	FindNodeWithTargetBySelf(d string) (nodes []string)
-	FindNodeWithTarget(targetId string, measure string) (nodes []string)
-	Broadcast(msg *KMsg)
-	PingN()
-	FindN()
+	FindNodeWithTarget(targetID string, measure string) (nodes []string)
+	FindNodeWithTargetBySelf(targetID string) (nodes []string)
+
+	PingRandom()
+	FindRandom()
 }

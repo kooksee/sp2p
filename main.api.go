@@ -4,41 +4,32 @@ func (s *sp2p) Write(msg *KMsg) {
 	go s.writeTx(msg)
 }
 
-func (s *sp2p) GetSelfNode() string {
+func (s *sp2p) SelfNode() string {
 	return s.tab.selfNode.string()
 }
 
-func (s *sp2p) GetNodes() []string {
+func (s *sp2p) NodeDumps() []string {
 	return s.tab.getRawNodes()
 }
 
-func (s *sp2p) TableSize() int {
-	return s.tab.size()
-}
-
-func (s *sp2p) UpdateNode(rawUrl string) error {
-	n, err := NodeParse(rawUrl)
-	if err != nil {
-		return err
+func (s *sp2p) NodeUpdate(rawUrl ... string) error {
+	for _, url := range rawUrl {
+		n, err := NodeParse(url)
+		if err != nil {
+			return err
+		}
+		s.tab.updateNode(n)
 	}
-	s.tab.updateNode(n)
 	return nil
 }
-func (s *sp2p) DeleteNode(id string) error {
-	n, err := HexToHash(id)
-	if err != nil {
-		return err
+func (s *sp2p) NodeDel(nodeID ... string) error {
+	for _, id := range nodeID {
+		n, err := HexToHash(id)
+		if err != nil {
+			return err
+		}
+		s.tab.deleteNode(n)
 	}
-	s.tab.deleteNode(n)
-	return nil
-}
-
-func (s *sp2p) AddNode(rawUrl string) error {
-	n, err := NodeParse(rawUrl)
-	if err != nil {
-		return err
-	}
-	s.tab.addNode(n)
 	return nil
 }
 
@@ -75,12 +66,12 @@ func (s *sp2p) FindNodeWithTarget(targetId string, measure string) (nodes []stri
 	return
 }
 
-func (s *sp2p) PingN() {
-	go s.pingN()
+func (s *sp2p) PingRandom() {
+	go s.pingRandom()
 }
 
-func (s *sp2p) FindN() {
-	go s.findN()
+func (s *sp2p) FindRandom() {
+	go s.findRandom()
 }
 
 func (s *sp2p) Broadcast(msg *KMsg) {

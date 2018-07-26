@@ -37,6 +37,11 @@ func newSP2p() ISP2P {
 	logger.Debug("create table", "table")
 	p2p.tab = newTable(nodeId, cfg.AdvertiseAddr)
 
+	// 添加seeds
+	for _, s := range cfg.Seeds {
+		p2p.tab.updateNode(MustNodeParse(s))
+	}
+
 	go p2p.accept()
 	go p2p.loop()
 	go p2p.genUUID()
@@ -65,7 +70,7 @@ func (s *sp2p) genUUID() {
 	}
 }
 
-func (s *sp2p) GetAddr() string {
+func (s *sp2p) getAddr() string {
 	if s.laddr == "" {
 		s.laddr = s.localAddr.String()
 	}
@@ -76,9 +81,9 @@ func (s *sp2p) loop() {
 	for {
 		select {
 		case <-cfg.FindNodeTick.C:
-			go s.findN()
+			go s.findRandom()
 		case <-cfg.PingTick.C:
-			go s.pingN()
+			go s.pingRandom()
 		case <-cfg.NtpTick.C:
 			go checkClockDrift()
 		case tx := <-s.txRC:
@@ -95,7 +100,7 @@ func (s *sp2p) writeTx(msg *KMsg) {
 
 func (s *sp2p) write(msg *KMsg) {
 	if msg.FAddr == "" {
-		msg.FAddr = s.GetAddr()
+		msg.FAddr = s.getAddr()
 	}
 	if msg.FID == "" {
 		msg.FID = s.tab.selfNode.ID.Hex()
@@ -127,13 +132,13 @@ func (s *sp2p) write(msg *KMsg) {
 	}
 }
 
-func (s *sp2p) pingN() {
+func (s *sp2p) pingRandom() {
 	for _, n := range s.tab.findRandomNodes(cfg.PingNodeNum) {
 		s.writeTx(&KMsg{TAddr: n.addrString(), FID: s.tab.selfNode.ID.Hex(), Data: &pingReq{}})
 	}
 }
 
-func (s *sp2p) findN() {
+func (s *sp2p) findRandom() {
 	for _, b := range s.tab.buckets {
 		if b == nil || b.size() == 0 {
 			continue
