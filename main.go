@@ -31,7 +31,7 @@ func NewSP2p() ISP2P {
 		p2p.conn = conn
 	}
 
-	nodeId := MustHexID(If(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
+	nodeId := MustHexID(cond(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
 	logger.Debug("node id", "id", nodeId)
 
 	logger.Debug("create table", "table")
@@ -97,6 +97,9 @@ func (s *sp2p) write(msg *KMsg) {
 	if msg.FAddr == "" {
 		msg.FAddr = s.GetAddr()
 	}
+	if msg.FID == "" {
+		msg.FID = s.tab.selfNode.ID.Hex()
+	}
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
 	}
@@ -104,7 +107,11 @@ func (s *sp2p) write(msg *KMsg) {
 		msg.Version = cfg.Version
 	}
 	if msg.TAddr == "" {
-		getLog().Error("target udp addr is nonexistent")
+		getLog().Error("target node addr is nonexistent")
+		return
+	}
+	if msg.TID == "" {
+		getLog().Error("target node id is nonexistent")
 		return
 	}
 
@@ -171,7 +178,13 @@ func (s *sp2p) accept() {
 				continue
 			}
 
-			s.txRC <- msg
+			// 检查该ID是否已经存在过,防止数据重复发送
+			if _, b := getCfg().cache.Get(msg.ID); b {
+				continue
+			} else {
+				getCfg().cache.SetDefault(msg.ID, true)
+				s.txRC <- msg
+			}
 		}
 	}
 }

@@ -35,7 +35,7 @@ type ITable interface {
 type ISP2P interface {
 	GetAddr() string
 	Write(msg *KMsg)
-	GetNode() string
+	GetSelfNode() string
 	GetNodes() []string
 	TableSize() int
 	UpdateNode(rawUrl string) error
@@ -44,6 +44,7 @@ type ISP2P interface {
 	FindRandomNodes(n int) (nodes []string)
 	FindNodeWithTargetBySelf(d string) (nodes []string)
 	FindNodeWithTarget(targetId string, measure string) (nodes []string)
+	Broadcast(msg *KMsg)
 	PingN()
 	FindN()
 }

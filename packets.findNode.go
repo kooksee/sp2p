@@ -7,7 +7,6 @@ type findNodeReq struct {
 func (t *findNodeReq) T() byte        { return findNodeReqT }
 func (t *findNodeReq) String() string { return findNodeReqS }
 func (t *findNodeReq) OnHandle(p ISP2P, msg *KMsg) {
-
 	node, err := nodeFromKMsg(msg)
 	if err != nil {
 		getLog().Error("NodeFromKMsg error", "err", err)

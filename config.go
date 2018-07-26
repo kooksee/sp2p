@@ -7,6 +7,7 @@ import (
 	"github.com/kooksee/kdb"
 	"os"
 	"path/filepath"
+	"github.com/patrickmn/go-cache"
 )
 
 var (
@@ -70,6 +71,7 @@ type kConfig struct {
 	uuidC chan string
 	db    *kdb.KDB
 	l     log15.Logger
+	cache *cache.Cache
 }
 
 func (t *kConfig) InitLog(l ... log15.Logger) *kConfig {
@@ -149,6 +151,7 @@ func DefaultKConfig() *kConfig {
 		StoreAckNum:   2,
 
 		uuidC: make(chan string, 500),
+		cache: cache.New(10*time.Minute, 30*time.Minute),
 	}
 
 	return cfg

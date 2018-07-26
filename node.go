@@ -26,7 +26,7 @@ type node struct {
 
 // Newnode creates a new node. It is mostly meant to be used for
 // testing purposes.
-func NewNode(id Hash, ip net.IP, udpPort uint16) *node {
+func newNode(id Hash, ip net.IP, udpPort uint16) *node {
 	n := &node{
 		IP:       ip,
 		Port:     udpPort,
@@ -82,7 +82,7 @@ func (n *node) string() string {
 	} else {
 		//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
 		u.User = url.User(f("%x", n.ID[:]))
-		u.Host = n.AddrString()
+		u.Host = n.addrString()
 	}
 	n.nodeString = u.String()
 
@@ -99,7 +99,7 @@ func NodeParse(rawurl string) (*node, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid node ID (%v)", err)
 		}
-		return NewNode(id, nil, 0), nil
+		return newNode(id, nil, 0), nil
 	}
 	return parseComplete(rawurl)
 }
@@ -149,7 +149,7 @@ func parseComplete(rawurl string) (*node, error) {
 		}
 	}
 
-	return NewNode(id, ip, uint16(udpPort)), nil
+	return newNode(id, ip, uint16(udpPort)), nil
 }
 
 // MustNodeParse parses a node URL. It panics if the URL is not valid.

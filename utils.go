@@ -38,7 +38,7 @@ func timeAdd(ts time.Duration) time.Time {
 	return time.Now().Add(ts)
 }
 
-func If(cond bool, trueVal, falseVal interface{}) interface{} {
+func cond(cond bool, trueVal, falseVal interface{}) interface{} {
 	if cond {
 		return trueVal
 	}
@@ -89,7 +89,7 @@ func nodeFromKMsg(msg *KMsg) (*node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewNode(nid, addr.IP, uint16(addr.Port)), nil
+	return newNode(nid, addr.IP, uint16(addr.Port)), nil
 }
 
 func mustNotErr(err error) {

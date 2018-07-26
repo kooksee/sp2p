@@ -1,22 +1,22 @@
 package sp2p
 
-func (s *SP2p) Write(msg *KMsg) {
+func (s *sp2p) Write(msg *KMsg) {
 	go s.writeTx(msg)
 }
 
-func (s *SP2p) GetNode() string {
+func (s *sp2p) GetSelfNode() string {
 	return s.tab.selfNode.string()
 }
 
-func (s *SP2p) GetNodes() []string {
+func (s *sp2p) GetNodes() []string {
 	return s.tab.getRawNodes()
 }
 
-func (s *SP2p) TableSize() int {
+func (s *sp2p) TableSize() int {
 	return s.tab.size()
 }
 
-func (s *SP2p) UpdateNode(rawUrl string) error {
+func (s *sp2p) UpdateNode(rawUrl string) error {
 	n, err := NodeParse(rawUrl)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func (s *SP2p) UpdateNode(rawUrl string) error {
 	s.tab.updateNode(n)
 	return nil
 }
-func (s *SP2p) DeleteNode(id string) error {
+func (s *sp2p) DeleteNode(id string) error {
 	n, err := HexToHash(id)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func (s *SP2p) DeleteNode(id string) error {
 	return nil
 }
 
-func (s *SP2p) AddNode(rawUrl string) error {
+func (s *sp2p) AddNode(rawUrl string) error {
 	n, err := NodeParse(rawUrl)
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func (s *SP2p) AddNode(rawUrl string) error {
 	return nil
 }
 
-func (s *SP2p) FindMinDisNodes(targetID string, n int) (nodes []string, err error) {
+func (s *sp2p) FindMinDisNodes(targetID string, n int) (nodes []string, err error) {
 	h, err := HexToHash(targetID)
 	if err != nil {
 		return nil, err
@@ -54,31 +54,39 @@ func (s *SP2p) FindMinDisNodes(targetID string, n int) (nodes []string, err erro
 	return nodes, nil
 }
 
-func (s *SP2p) FindRandomNodes(n int) (nodes []string) {
+func (s *sp2p) FindRandomNodes(n int) (nodes []string) {
 	for _, n := range s.tab.findRandomNodes(n) {
 		nodes = append(nodes, n.string())
 	}
 	return
 }
 
-func (s *SP2p) FindNodeWithTargetBySelf(d string) (nodes []string) {
+func (s *sp2p) FindNodeWithTargetBySelf(d string) (nodes []string) {
 	for _, n := range s.tab.findNodeWithTargetBySelf(StringToHash(d)) {
 		nodes = append(nodes, n.string())
 	}
 	return
 }
 
-func (s *SP2p) FindNodeWithTarget(targetId string, measure string) (nodes []string) {
+func (s *sp2p) FindNodeWithTarget(targetId string, measure string) (nodes []string) {
 	for _, n := range s.tab.findNodeWithTarget(StringToHash(targetId), StringToHash(measure)) {
 		nodes = append(nodes, n.string())
 	}
 	return
 }
 
-func (s *SP2p) PingN() {
+func (s *sp2p) PingN() {
 	go s.pingN()
 }
 
-func (s *SP2p) FindN() {
+func (s *sp2p) FindN() {
 	go s.findN()
+}
+
+func (s *sp2p) Broadcast(msg *KMsg) {
+	for _, n := range s.tab.getAllNodes() {
+		msg.TAddr = n.addrString()
+		msg.TID = n.ID.Hex()
+		s.writeTx(msg)
+	}
 }
