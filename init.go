@@ -13,6 +13,7 @@ var f = cmn.F
 var cond = cmn.If
 var mustNotErr = cmn.Err.MustNotErr
 var errs = cmn.Err.Err
+var errPipe=cmn.Err.ErrWithMsg
 var checkClockDrift = cmn.CheckClockDrift
 var newKBuffer = cmn.NewKBuffer
 var randBytes = cmn.Rand.RandBytes

@@ -2,7 +2,6 @@ package sp2p
 
 import (
 	"math/rand"
-	"net"
 	"time"
 )
 
@@ -65,17 +64,6 @@ func hashAtDistance(a Hash, n int) (b Hash) {
 	return b
 }
 
-func nodeFromKMsg(msg *KMsg) (*node, error) {
-	nid, err := HexID(msg.FID)
-	if err != nil {
-		return nil, err
-	}
-	addr, err := net.ResolveUDPAddr("udp", msg.FAddr)
-	if err != nil {
-		return nil, err
-	}
-	return newNode(nid, addr.IP, uint16(addr.Port)), nil
-}
 
 func nodesBackupKey(k []byte) []byte {
 	return append([]byte(cfg.NodesBackupKey), k...)

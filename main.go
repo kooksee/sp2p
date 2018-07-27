@@ -82,7 +82,11 @@ func (s *sp2p) loop() {
 		case tx := <-s.txRC:
 			go tx.Data.OnHandle(s, tx)
 		case tx := <-s.txWC:
-			go s.write(tx)
+			go func() {
+				if err := s.write(tx); err != nil {
+					getLog().Error("sp2p loop write error", "err", err.Error())
+				}
+			}()
 		}
 	}
 }
@@ -91,40 +95,31 @@ func (s *sp2p) writeTx(msg *KMsg) {
 	s.txWC <- msg
 }
 
-func (s *sp2p) write(msg *KMsg) {
-	if msg.FAddr == "" {
-		msg.FAddr = cfg.localNode.string()
-	}
-	if msg.FID == "" {
-		msg.FID = cfg.localNode.ID.Hex()
+func (s *sp2p) write(msg *KMsg) error {
+	if msg.FN == "" {
+		msg.FN = cfg.localNode.string()
 	}
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
 	}
-	if msg.TAddr == "" {
-		getLog().Error("target node addr is nonexistent")
-		return
-	}
-	if msg.TID == "" {
-		getLog().Error("target node id is nonexistent")
-		return
+	if msg.TN == "" {
+		return errs("target node id is nonexistent")
 	}
 
-	addr, err := net.ResolveUDPAddr("udp", msg.TAddr)
+	n, err := NodeParse(msg.TN)
 	if err != nil {
-		getLog().Error("ResolveUDPAddr error", "err", err)
-		return
+		return err
 	}
 
-	if _, err := getLocalConn().WriteToUDP(msg.Dumps(), addr); err != nil {
-		getLog().Error("WriteToUDP error", "err", err)
-		return
+	if _, err := getLocalConn().WriteToUDP(msg.Dumps(), n.udpAddr); err != nil {
+		return errPipe("WriteToUDP error", err)
 	}
+	return nil
 }
 
 func (s *sp2p) pingRandom() {
 	for _, n := range s.tab.findRandomNodes(cfg.PingNodeNum) {
-		s.writeTx(&KMsg{TAddr: n.addrString(), FID: s.tab.selfNode.ID.Hex(), Data: &pingReq{}})
+		s.writeTx(&KMsg{TN: n.string(), Data: &pingReq{}})
 	}
 }
 
@@ -133,7 +128,7 @@ func (s *sp2p) findRandom() {
 		if b == nil || b.size() == 0 {
 			continue
 		}
-		s.writeTx(&KMsg{TAddr: b.random().addrString(), Data: &findNodeReq{N: cfg.FindNodeNUm}, FID: s.tab.selfNode.ID.Hex()})
+		s.writeTx(&KMsg{TN: b.random().string(), Data: &findNodeReq{N: cfg.FindNodeNUm}})
 	}
 }
 

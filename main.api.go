@@ -1,7 +1,7 @@
 package sp2p
 
 func (s *sp2p) Write(msg *KMsg) {
-	go s.writeTx(msg)
+	s.writeTx(msg)
 }
 
 func (s *sp2p) SelfNode() string {
@@ -76,8 +76,13 @@ func (s *sp2p) FindRandom() {
 
 func (s *sp2p) Broadcast(msg *KMsg) {
 	for _, n := range s.tab.getAllNodes() {
-		msg.TAddr = n.addrString()
-		msg.TID = n.ID.Hex()
+		msg.TN = n.string()
 		s.writeTx(msg)
+	}
+}
+
+func (s *sp2p) InitSeeds(seeds []string)  {
+	for _,n:=range seeds{
+		mustNotErr(s.NodeUpdate(n))
 	}
 }

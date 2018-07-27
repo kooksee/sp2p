@@ -2,7 +2,6 @@ package sp2p
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"net/url"
 	"regexp"
@@ -97,7 +96,7 @@ func NodeParse(rawurl string) (*node, error) {
 	if m := incompletenodeURL.FindStringSubmatch(rawurl); m != nil {
 		id, err := HexID(m[1])
 		if err != nil {
-			return nil, fmt.Errorf("invalid node ID (%v)", err)
+			return nil, errPipe("NodeParse invalid node ID ", err)
 		}
 		return newNode(id, nil, 0), nil
 	}
@@ -115,22 +114,22 @@ func parseComplete(rawurl string) (*node, error) {
 		return nil, err
 	}
 	if u.Scheme != "sp2p" {
-		return nil, errors.New("invalid URL scheme, want \"sp2p\"")
+		return nil, errs("invalid URL scheme, want \"sp2p\"")
 	}
 	// Parse the node ID from the user portion.
 	if u.User == nil {
-		return nil, errors.New("does not contain node ID")
+		return nil, errs("does not contain node ID")
 	}
 	if id, err = HexID(u.User.String()); err != nil {
-		return nil, fmt.Errorf("invalid node ID (%v)", err)
+		return nil, errPipe("parseComplete invalid node ID", err)
 	}
 	// Parse the IP address.
 	host, port, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		return nil, fmt.Errorf("invalid host: %v", err)
+		return nil, errPipe("invalid host", err)
 	}
 	if ip = net.ParseIP(host); ip == nil {
-		return nil, errors.New("invalid IP address")
+		return nil, errs("invalid IP address")
 	}
 	// Ensure the IP is 4 bytes long for IPv4 addresses.
 	if ipv4 := ip.To4(); ipv4 != nil {
@@ -138,14 +137,14 @@ func parseComplete(rawurl string) (*node, error) {
 	}
 	// Parse the port numbers.
 	if tcpPort, err = strconv.ParseUint(port, 10, 16); err != nil {
-		return nil, errors.New("invalid port")
+		return nil, errs("invalid port")
 	}
 	udpPort = tcpPort
 	qv := u.Query()
 	if qv.Get("discport") != "" {
 		udpPort, err = strconv.ParseUint(qv.Get("discport"), 10, 16)
 		if err != nil {
-			return nil, errors.New("invalid discport in query")
+			return nil, errs("invalid discport in query")
 		}
 	}
 

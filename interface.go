@@ -6,7 +6,7 @@ type IMessage interface {
 	// 描述信息
 	String() string
 	// 业务处理
-	OnHandle(ISP2P, *KMsg)
+	OnHandle(ISP2P, *KMsg) error
 }
 
 type ITable interface {
@@ -33,7 +33,7 @@ type ITable interface {
 type ISP2P interface {
 	Write(msg *KMsg)
 	Broadcast(msg *KMsg)
-	InitSeeds([]string) error
+	InitSeeds(seeds []string)
 
 	SelfNode() string
 	NodeDumps() []string
