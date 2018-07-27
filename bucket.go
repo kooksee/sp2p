@@ -13,7 +13,7 @@ var bucketPrefix = []byte("bkt")
 
 type bucket struct {
 	peers *arraylist.List
-	h     *kdb.KHash
+	h     kdb.IKHash
 }
 
 func newBuckets() *bucket {

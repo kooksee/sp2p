@@ -69,7 +69,7 @@ type kConfig struct {
 	Seeds []string
 
 	uuidC chan string
-	db    *kdb.KDB
+	db    kdb.IKDB
 	l     log15.Logger
 	cache *cache.Cache
 	p2p   ISP2P
@@ -85,9 +85,8 @@ func (t *kConfig) InitLog(l ... log15.Logger) *kConfig {
 	return t
 }
 
-func (t *kConfig) InitP2P() *kConfig {
+func (t *kConfig) InitP2P() {
 	t.p2p = newSP2p()
-	return t
 }
 
 func (t *kConfig) GetP2P() ISP2P {
@@ -97,12 +96,13 @@ func (t *kConfig) GetP2P() ISP2P {
 	return t.p2p
 }
 
-func (t *kConfig) InitDb(db ... *kdb.KDB) *kConfig {
+func (t *kConfig) InitDb(db ... kdb.IKDB) *kConfig {
 	if len(db) != 0 {
 		t.db = db[0]
 	} else {
-		kdb.InitKdb(filepath.Join("kdata", "db"))
-		t.db = kdb.GetKdb()
+		kcfg := kdb.DefaultConfig()
+		kcfg.InitKdb(filepath.Join("kdata", "db"))
+		t.db = kcfg.GetDb()
 	}
 	return t
 }
@@ -114,7 +114,7 @@ func getLog() log15.Logger {
 	return getCfg().l
 }
 
-func getDb() *kdb.KDB {
+func getDb() kdb.IKDB {
 	if getCfg().db == nil {
 		getLog().Error("please init sp2p db")
 		panic("")

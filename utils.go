@@ -1,18 +1,10 @@
 package sp2p
 
 import (
-	"fmt"
 	"math/rand"
 	"net"
 	"time"
-	"strings"
 )
-
-func errs(err ... string) string {
-	return strings.Join(err, "\n")
-}
-
-var f = fmt.Sprintf
 
 // DistCmp compares the distances a->target and b->target.
 // Returns -1 if a is closer to target, 1 if b is closer to target
@@ -36,13 +28,6 @@ func expired(ts int64) bool {
 
 func timeAdd(ts time.Duration) time.Time {
 	return time.Now().Add(ts)
-}
-
-func cond(cond bool, trueVal, falseVal interface{}) interface{} {
-	if cond {
-		return trueVal
-	}
-	return falseVal
 }
 
 // logdist returns the logarithmic distance between a and b, log2(a ^ b).
@@ -90,14 +75,6 @@ func nodeFromKMsg(msg *KMsg) (*node, error) {
 		return nil, err
 	}
 	return newNode(nid, addr.IP, uint16(addr.Port)), nil
-}
-
-func mustNotErr(err error) {
-	if err == nil {
-		return
-	}
-	getLog().Error("MustNotErr", "err", err)
-	panic(err.Error())
 }
 
 func nodesBackupKey(k []byte) []byte {

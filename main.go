@@ -26,7 +26,7 @@ func newSP2p() ISP2P {
 	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())
 
 	if conn, err := net.ListenUDP("udp", p2p.localAddr); err != nil {
-		panic(errs(f("udp %s listen error", p2p.localAddr), err.Error()))
+		mustNotErr(errs("udp %s listen error", p2p.localAddr), err)
 	} else {
 		p2p.conn = conn
 	}
