@@ -15,4 +15,5 @@ var mustNotErr = cmn.Err.MustNotErr
 var errs = cmn.Err.Err
 var checkClockDrift = cmn.CheckClockDrift
 var newKBuffer = cmn.NewKBuffer
-var randBytes=cmn.Rand.RandBytes
+var randBytes = cmn.Rand.RandBytes
+var rand32 = cmn.Rand.Rand32

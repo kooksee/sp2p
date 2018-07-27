@@ -36,7 +36,7 @@ func (b *bucket) addNodes(nodes ... *node) {
 	logger := getLog()
 
 	// 把最活跃的放到最前面,然后移除最不活跃的
-	if err := b.h.WithTx(func(k *kdb.KHBatch) error {
+	if err := b.h.WithBatch(func(k kdb.IKHBatch) error {
 		for _, node := range nodes {
 			logger.Info("add node", "node", node.string())
 			b.peers.Add(node)
@@ -84,7 +84,7 @@ func (b *bucket) random() *node {
 }
 
 func (b *bucket) deleteNodes(targets ... Hash) {
-	if err := b.h.WithTx(func(k *kdb.KHBatch) error {
+	if err := b.h.WithBatch(func(k kdb.IKHBatch) error {
 		for _, n := range targets {
 			if a := b.peers.IndexOf(n); a != -1 {
 				val, bl := b.peers.Get(a)

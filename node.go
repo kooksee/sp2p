@@ -31,7 +31,7 @@ func newNode(id Hash, ip net.IP, udpPort uint16) *node {
 		IP:       ip,
 		Port:     udpPort,
 		ID:       id,
-		addr:     fmt.Sprintf("%s:%d", ip.String(), udpPort),
+		addr:     f("%s:%d", ip.String(), udpPort),
 		updateAt: time.Now(),
 		udpAddr:  &net.UDPAddr{IP: ip, Port: int(udpPort)},
 	}
