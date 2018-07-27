@@ -41,7 +41,7 @@ func (b *bucket) addNodes(nodes ... *node) {
 			logger.Info("add node", "node", node.string())
 			b.peers.Add(node)
 			if err := k.Set(nodesBackupKey(node.ID.Bytes()), []byte(node.string())); err != nil {
-				logger.Error("add peer error", "err", err)
+				logger.Error("add peer error", "err", err.Error())
 				continue
 			}
 		}

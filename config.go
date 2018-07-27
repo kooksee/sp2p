@@ -5,7 +5,6 @@ import (
 	"github.com/inconshreveable/log15"
 	"net"
 	"github.com/kooksee/kdb"
-	"os"
 	"path/filepath"
 	"github.com/patrickmn/go-cache"
 	"sync"
@@ -58,16 +57,6 @@ type kConfig struct {
 	l     log15.Logger
 	cache *cache.Cache
 	p2p   ISP2P
-}
-
-func (t *kConfig) InitLog(l ... log15.Logger) *kConfig {
-	if len(l) != 0 {
-		t.l = l[0].New("package", "sp2p")
-	} else {
-		t.l = log15.New("package", "sp2p")
-		t.l.SetHandler(log15.LvlFilterHandler(log15.LvlDebug, log15.StreamHandler(os.Stdout, log15.TerminalFormat())))
-	}
-	return t
 }
 
 func (t *kConfig) InitConn(conn net.Conn) *kConfig {
@@ -125,8 +114,7 @@ func getLog() log15.Logger {
 
 func getDb() kdb.IKDB {
 	if getCfg().db == nil {
-		getLog().Error("please init sp2p db")
-		panic("")
+		panic("please init sp2p db")
 	}
 	return getCfg().db
 }

@@ -74,7 +74,11 @@ func (s *sp2p) loop() {
 		case <-cfg.PingTick.C:
 			go s.pingRandom()
 		case <-cfg.NtpTick.C:
-			go checkClockDrift()
+			go func() {
+				if err := checkClockDrift(); err != nil {
+					getLog().Error("checkClockDrift error", "err", err.Error())
+				}
+			}()
 		case tx := <-s.txRC:
 			go tx.Data.OnHandle(s, tx)
 		case tx := <-s.txWC:
@@ -89,10 +93,10 @@ func (s *sp2p) writeTx(msg *KMsg) {
 
 func (s *sp2p) write(msg *KMsg) {
 	if msg.FAddr == "" {
-		msg.FAddr = s.getAddr()
+		msg.FAddr = cfg.localNode.string()
 	}
 	if msg.FID == "" {
-		msg.FID = s.tab.selfNode.ID.Hex()
+		msg.FID = cfg.localNode.ID.Hex()
 	}
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
@@ -169,10 +173,11 @@ func (s *sp2p) accept() {
 			}
 
 			// 检查该ID是否已经存在过,防止数据重复发送
-			if _, b := getCfg().cache.Get(msg.ID); b {
+			cache := getCfg().cache
+			if _, b := cache.Get(msg.ID); b {
 				continue
 			} else {
-				getCfg().cache.SetDefault(msg.ID, true)
+				cache.SetDefault(msg.ID, true)
 				s.txRC <- msg
 			}
 		}

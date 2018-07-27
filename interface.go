@@ -1,7 +1,5 @@
 package sp2p
 
-type IHandler func(*sp2p, *KMsg)
-
 type IMessage interface {
 	// 获取类型
 	T() byte

@@ -1,22 +1,18 @@
 package sp2p
 
-import (
-	"errors"
-)
-
 type KMsg struct {
-	ID      string   `json:"id"`
-	TID     string   `json:"tid"`
-	TAddr   string   `json:"taddr,omitempty"`
-	FAddr   string   `json:"faddr,omitempty"`
-	FID     string   `json:"fid,omitempty"`
-	Data    IMessage `json:"data,omitempty"`
+	ID    string   `json:"id"`
+	TID   string   `json:"tid"`
+	TAddr string   `json:"taddr,omitempty"`
+	FAddr string   `json:"faddr,omitempty"`
+	FID   string   `json:"fid,omitempty"`
+	Data  IMessage `json:"data,omitempty"`
 }
 
 func (t *KMsg) Decode(msg []byte) error {
 	dt := msg[0]
 	if !hm.contain(dt) {
-		return errors.New(f("msg type %s is nonexistent", dt))
+		return errs("msg type %s is nonexistent", dt)
 	}
 
 	t.Data = hm.getHandler(dt)
