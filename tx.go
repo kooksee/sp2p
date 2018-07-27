@@ -5,7 +5,6 @@ import (
 )
 
 type KMsg struct {
-	Version string   `json:"version,omitempty"`
 	ID      string   `json:"id"`
 	TID     string   `json:"tid"`
 	TAddr   string   `json:"taddr,omitempty"`

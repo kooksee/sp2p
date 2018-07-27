@@ -14,33 +14,23 @@ func newSP2p() ISP2P {
 	p2p := &sp2p{
 		txRC:      make(chan *KMsg, 10000),
 		txWC:      make(chan *KMsg, 10000),
-		localAddr: &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP(cfg.Host)},
+		localAddr: cfg.localNode.udpAddr,
 	}
 
-	if cfg.AdvertiseAddr == nil {
-		logger.Error("没有设置AdvertiseAddr")
-		cfg.AdvertiseAddr = &net.UDPAddr{Port: cfg.Port, IP: net.ParseIP("127.0.0.1")}
-		logger.Warn("默认AdvertiseAddr", "addr", cfg.AdvertiseAddr.String())
+	uad, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+	if err != nil {
+		panic(err.Error())
 	}
+	cnn, err := net.ListenUDP("udp", uad)
+	if err != nil {
+		panic(err.Error())
+	}
+	cfg.localConn = cnn
 
 	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())
 
-	if conn, err := net.ListenUDP("udp", p2p.localAddr); err != nil {
-		mustNotErr(errs("udp %s listen error", p2p.localAddr), err)
-	} else {
-		p2p.conn = conn
-	}
-
-	nodeId := MustHexID(cond(cfg.NodeId == "", GenNodeID(), cfg.NodeId).(string))
-	logger.Debug("node id", "id", nodeId)
-
 	logger.Debug("create table", "table")
-	p2p.tab = newTable(nodeId, cfg.AdvertiseAddr)
-
-	// 添加seeds
-	for _, s := range cfg.Seeds {
-		p2p.tab.updateNode(MustNodeParse(s))
-	}
+	p2p.tab = newTable(cfg.localNode.ID, cfg.localNode.udpAddr)
 
 	go p2p.accept()
 	go p2p.loop()
@@ -55,7 +45,6 @@ type sp2p struct {
 	tab       *table
 	txRC      chan *KMsg
 	txWC      chan *KMsg
-	conn      *net.UDPConn
 	localAddr *net.UDPAddr
 	laddr     string
 }
@@ -108,9 +97,6 @@ func (s *sp2p) write(msg *KMsg) {
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
 	}
-	if msg.Version == "" {
-		msg.Version = cfg.Version
-	}
 	if msg.TAddr == "" {
 		getLog().Error("target node addr is nonexistent")
 		return
@@ -126,7 +112,7 @@ func (s *sp2p) write(msg *KMsg) {
 		return
 	}
 
-	if _, err := s.conn.WriteToUDP(msg.Dumps(), addr); err != nil {
+	if _, err := getLocalConn().WriteToUDP(msg.Dumps(), addr); err != nil {
 		getLog().Error("WriteToUDP error", "err", err)
 		return
 	}
@@ -152,7 +138,7 @@ func (s *sp2p) accept() {
 	logger := getLog()
 	for {
 		buf := make([]byte, cfg.MaxBufLen)
-		n, addr, err := s.conn.ReadFromUDP(buf)
+		n, err := getConn().Read(buf)
 		if err != nil {
 			if strings.Contains(err.Error(), "timeout") {
 				logger.Error("timeout", "err", err)
@@ -165,8 +151,7 @@ func (s *sp2p) accept() {
 			time.Sleep(time.Second * 2)
 			continue
 		}
-		logger.Debug("udp message", "addr", addr.String())
-		logger.Debug(string(buf))
+
 		messages := kb.Next(buf[:n])
 		if messages == nil {
 			continue

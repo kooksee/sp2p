@@ -35,6 +35,7 @@ type ITable interface {
 type ISP2P interface {
 	Write(msg *KMsg)
 	Broadcast(msg *KMsg)
+	InitSeeds([]string) error
 
 	SelfNode() string
 	NodeDumps() []string
