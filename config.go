@@ -105,6 +105,10 @@ func (t *kConfig) InitDb(db ... kdb.IKDB) *kConfig {
 	return t
 }
 
+func CreateNode(id Hash, ip net.IP, udpPort uint16) string {
+	return newNode(id, ip, udpPort).string()
+}
+
 func getLog() log15.Logger {
 	if getCfg().l == nil {
 		panic("please init sp2p log")

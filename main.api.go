@@ -75,14 +75,21 @@ func (s *sp2p) FindRandom() {
 }
 
 func (s *sp2p) Broadcast(msg *KMsg) {
-	for _, n := range s.tab.getAllNodes() {
+	for _, n := range s.tab.getRawNodes() {
+		msg.TN = n
+		s.writeTx(msg)
+	}
+}
+
+func (s *sp2p) RandomCast(msg *KMsg) {
+	for _, n := range s.tab.findRandomNodes(8) {
 		msg.TN = n.string()
 		s.writeTx(msg)
 	}
 }
 
-func (s *sp2p) InitSeeds(seeds []string)  {
-	for _,n:=range seeds{
+func (s *sp2p) InitSeeds(seeds []string) {
+	for _, n := range seeds {
 		mustNotErr(s.NodeUpdate(n))
 	}
 }

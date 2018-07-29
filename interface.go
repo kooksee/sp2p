@@ -33,6 +33,7 @@ type ITable interface {
 type ISP2P interface {
 	Write(msg *KMsg)
 	Broadcast(msg *KMsg)
+	RandomCast(msg *KMsg)
 	InitSeeds(seeds []string)
 
 	SelfNode() string

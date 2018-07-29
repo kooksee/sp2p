@@ -30,7 +30,8 @@ func (t *findNodeReq) OnHandle(p ISP2P, msg *KMsg) error {
 	for _, n := range nodes {
 		ns = append(ns, n)
 	}
-	return p.Write(&KMsg{TN: msg.FN, Data: &findNodeResp{Nodes: ns}})
+	p.Write(&KMsg{TN: msg.FN, Data: &findNodeResp{Nodes: ns}})
+	return nil
 }
 
 type findNodeResp struct {
