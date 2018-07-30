@@ -105,16 +105,16 @@ func NodeParse(rawurl string) (*node, error) {
 
 func parseComplete(rawurl string) (*node, error) {
 	var (
-		id               Hash
-		ip               net.IP
-		tcpPort, udpPort uint64
+		id      Hash
+		ip      net.IP
+		udpPort uint64
 	)
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return nil, err
 	}
 	if u.Scheme != "sp2p" {
-		return nil, errs("invalid URL scheme, want \"sp2p\"")
+		return nil, errs("invalid URL scheme, want sp2p ")
 	}
 	// Parse the node ID from the user portion.
 	if u.User == nil {
@@ -136,18 +136,9 @@ func parseComplete(rawurl string) (*node, error) {
 		ip = ipv4
 	}
 	// Parse the port numbers.
-	if tcpPort, err = strconv.ParseUint(port, 10, 16); err != nil {
+	if udpPort, err = strconv.ParseUint(port, 10, 16); err != nil {
 		return nil, errs("invalid port")
 	}
-	udpPort = tcpPort
-	qv := u.Query()
-	if qv.Get("discport") != "" {
-		udpPort, err = strconv.ParseUint(qv.Get("discport"), 10, 16)
-		if err != nil {
-			return nil, errs("invalid discport in query")
-		}
-	}
-
 	return newNode(id, ip, uint16(udpPort)), nil
 }
 
@@ -158,4 +149,7 @@ func MustNodeParse(rawUrl string) *node {
 		panic(errs("invalid node URL", err.Error()))
 	}
 	return n
+}
+
+func NodeP(rawUrl string) {
 }

@@ -64,7 +64,6 @@ func hashAtDistance(a Hash, n int) (b Hash) {
 	return b
 }
 
-
 func nodesBackupKey(k []byte) []byte {
 	return append([]byte(cfg.NodesBackupKey), k...)
 }
