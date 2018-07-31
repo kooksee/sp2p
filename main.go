@@ -17,16 +17,6 @@ func newSP2p() ISP2P {
 		localAddr: cfg.localNode.udpAddr,
 	}
 
-	uad, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
-	if err != nil {
-		panic(err.Error())
-	}
-	cnn, err := net.ListenUDP("udp", uad)
-	if err != nil {
-		panic(err.Error())
-	}
-	cfg.localConn = cnn
-
 	logger.Debug("ListenUDP", "addr", p2p.localAddr.String())
 
 	logger.Debug("create table", "table")

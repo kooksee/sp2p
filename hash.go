@@ -75,6 +75,5 @@ func HexToHash(hexS string) (Hash, error) {
 	if err != nil {
 		return emptyHash, err
 	}
-
 	return BytesToHash(b), nil
 }

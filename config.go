@@ -50,13 +50,15 @@ type kConfig struct {
 
 	conn      net.Conn
 	localNode *node
-	localConn *net.UDPConn
 
-	uuidC chan string
-	db    kdb.IKDB
-	l     log15.Logger
-	cache *cache.Cache
-	p2p   ISP2P
+	// －－－－－－－－－－－
+
+	localConn *net.UDPConn
+	uuidC     chan string
+	db        kdb.IKDB
+	l         log15.Logger
+	cache     *cache.Cache
+	p2p       ISP2P
 }
 
 func (t *kConfig) InitConn(conn net.Conn) *kConfig {
@@ -71,9 +73,18 @@ func getConn() net.Conn {
 	return cfg.conn
 }
 
+// 生成本地发送地址
 func getLocalConn() *net.UDPConn {
 	if cfg.localConn == nil {
-		panic("please init conn")
+		uad, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+		if err != nil {
+			panic(err.Error())
+		}
+		cnn, err := net.ListenUDP("udp", uad)
+		if err != nil {
+			panic(err.Error())
+		}
+		cfg.localConn = cnn
 	}
 	return cfg.localConn
 }
@@ -81,6 +92,13 @@ func getLocalConn() *net.UDPConn {
 func (t *kConfig) InitLocalNode(nodeUrl string) *kConfig {
 	t.localNode = MustNodeParse(nodeUrl)
 	return t
+}
+
+func getLocalNode() *node {
+	if getCfg().localNode == nil {
+		panic("please local node")
+	}
+	return getCfg().localNode
 }
 
 func (t *kConfig) InitP2P() {
@@ -137,7 +155,6 @@ func DefaultConfig() *kConfig {
 			Alpha:               3,
 			NodeResponseNumber:  8,
 			NodeBroadcastNumber: 16,
-			NodePartitionNumber: 8,
 			HashBits:            len(Hash{}) * 8,
 			PingNodeNum:         8,
 			FindNodeNUm:         20,

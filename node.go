@@ -17,10 +17,10 @@ type node struct {
 	ID   Hash   // the node's public key
 
 	// Time when the node was added to the table.
-	updateAt   time.Time
-	addr       string
-	udpAddr    *net.UDPAddr
-	nodeString string
+	updateAt time.Time
+	addr     string
+	udpAddr  *net.UDPAddr
+	nodeAddr string
 }
 
 // Newnode creates a new node. It is mostly meant to be used for
@@ -34,7 +34,7 @@ func newNode(id Hash, ip net.IP, udpPort uint16) *node {
 		updateAt: time.Now(),
 		udpAddr:  &net.UDPAddr{IP: ip, Port: int(udpPort)},
 	}
-	n.nodeString = n.string()
+	n.nodeAddr = n.string()
 
 	return n
 }
@@ -71,27 +71,26 @@ func (n *node) validateComplete() error {
 // The string representation of a node is a URL.
 // Please see Parsenode for a description of the format.
 func (n *node) string() string {
-	if n.nodeString != "" {
-		return n.nodeString
+	if n.nodeAddr != "" {
+		return n.nodeAddr
 	}
 
 	u := url.URL{Scheme: "sp2p"}
 	if n.incomplete() {
 		u.Host = f("%x", n.ID[:])
 	} else {
-		//u.User = url.User(fmt.Sprintf("%x", n.sha[:]))
 		u.User = url.User(f("%x", n.ID[:]))
 		u.Host = n.addrString()
 	}
-	n.nodeString = u.String()
+	n.nodeAddr = u.String()
 
-	return n.nodeString
+	return n.nodeAddr
 }
 
 var incompletenodeURL = regexp.MustCompile("(?i)^(?:sp2p://)?([0-9a-f]+)$")
 
 //    sp2p://<hex node id>@10.3.58.6:30303?discport=30301
-//    sp2p://<hex node id>@10.3.58.6:30303?discport=30301
+//    sp2p://<hex node id>@url.com:30303?discport=30301
 func NodeParse(rawurl string) (*node, error) {
 	if m := incompletenodeURL.FindStringSubmatch(rawurl); m != nil {
 		id, err := HexID(m[1])
@@ -139,6 +138,7 @@ func parseComplete(rawurl string) (*node, error) {
 	if udpPort, err = strconv.ParseUint(port, 10, 16); err != nil {
 		return nil, errs("invalid port")
 	}
+
 	return newNode(id, ip, uint16(udpPort)), nil
 }
 
@@ -149,7 +149,4 @@ func MustNodeParse(rawUrl string) *node {
 		panic(errs("invalid node URL", err.Error()))
 	}
 	return n
-}
-
-func NodeP(rawUrl string) {
 }

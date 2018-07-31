@@ -14,7 +14,7 @@ func (t *KMsg) Decode(msg []byte) error {
 	}
 
 	t.Data = hm.getHandler(dt)
-	return json.Unmarshal(msg[1:], t)
+	return jsonUnmarshal(msg[1:], t)
 }
 
 func (t *KMsg) FNode(msg []byte) error {
@@ -24,10 +24,10 @@ func (t *KMsg) FNode(msg []byte) error {
 	}
 
 	t.Data = hm.getHandler(dt)
-	return json.Unmarshal(msg[1:], t)
+	return jsonUnmarshal(msg[1:], t)
 }
 
 func (t *KMsg) Dumps() []byte {
-	d, _ := json.Marshal(t)
+	d, _ := jsonMarshal(t)
 	return append([]byte{t.Data.T()}, append(d, "\n"...)...)
 }
