@@ -4,6 +4,7 @@ type KMsg struct {
 	ID   string   `json:"id"`
 	TN   string   `json:"tn"`
 	FN   string   `json:"fn"`
+	Time string   `json:"time"`
 	Data IMessage `json:"data,omitempty"`
 }
 

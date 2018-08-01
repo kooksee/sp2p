@@ -12,12 +12,11 @@ import (
 // node represents a host on the network.
 // The fields of node may not be modified.
 type node struct {
-	IP   net.IP // len 4 for IPv4 or 16 for IPv6
-	Port uint16 // port numbers
-	ID   Hash   // the node's public key
+	IP       net.IP
+	Port     uint16
+	ID       Hash
+	UpdateAt time.Time
 
-	// Time when the node was added to the table.
-	updateAt time.Time
 	addr     string
 	udpAddr  *net.UDPAddr
 	nodeAddr string
@@ -31,7 +30,7 @@ func newNode(id Hash, ip net.IP, udpPort uint16) *node {
 		Port:     udpPort,
 		ID:       id,
 		addr:     f("%s:%d", ip.String(), udpPort),
-		updateAt: time.Now(),
+		UpdateAt: time.Now(),
 		udpAddr:  &net.UDPAddr{IP: ip, Port: int(udpPort)},
 	}
 	n.nodeAddr = n.string()
@@ -66,6 +65,21 @@ func (n *node) validateComplete() error {
 	}
 
 	return nil
+}
+
+func NodeUnMarshal(data []byte, n *node) error {
+	if err := jsonUnmarshal(data, n); err != nil {
+		return err
+	}
+
+	n.addr = f("%s:%d", n.IP.String(), n.Port)
+	n.udpAddr = &net.UDPAddr{IP: n.IP, Port: int(n.Port)}
+
+	return nil
+}
+
+func (n *node) marshal() ([]byte, error) {
+	return jsonMarshal(n)
 }
 
 // The string representation of a node is a URL.

@@ -22,6 +22,7 @@ func (t *findNodeReq) OnHandle(p ISP2P, msg *KMsg) error {
 	if err != nil {
 		return err
 	}
+
 	nodes, err := p.FindMinDisNodes(n.ID.Hex(), t.N)
 	if err != nil {
 		return err
@@ -30,6 +31,7 @@ func (t *findNodeReq) OnHandle(p ISP2P, msg *KMsg) error {
 	for _, n := range nodes {
 		ns = append(ns, n)
 	}
+
 	p.Write(&KMsg{TN: msg.FN, Data: &findNodeResp{Nodes: ns}})
 	return nil
 }

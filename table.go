@@ -54,11 +54,11 @@ func (t *table) getRawNodes() []string {
 	return nodes
 }
 
-func (t *table) addNode(node *node) {
+func (t *table) addNode(node *node) error {
 	t.buckets[logdist(t.selfNode.ID, node.ID)].addNodes(node)
 }
 
-func (t *table) updateNode(node *node) {
+func (t *table) updateNode(node *node) error {
 	t.buckets[logdist(t.selfNode.ID, node.ID)].updateNodes(node)
 }
 
@@ -68,6 +68,21 @@ func (t *table) size() int {
 		n += b.size()
 	}
 	return n
+}
+
+// 加载数据库中的节点
+func (t *table) loadNodes() error {
+	return errPipe(
+		"bucket getAllNodes error",
+		getDb().KHash(bucketPrefix).Range(func(key, value []byte) error {
+			n := &node{}
+			if err := NodeUnMarshal(value, n); err != nil {
+				return err
+			}
+
+			return t.addNode(n)
+		}),
+	)
 }
 
 // ReadRandomNodes fills the given slice with random nodes from the

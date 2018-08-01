@@ -6,6 +6,7 @@ import (
 	"strings"
 	"io"
 	"github.com/satori/go.uuid"
+	"math/big"
 )
 
 func newSP2p() ISP2P {
@@ -91,6 +92,9 @@ func (s *sp2p) write(msg *KMsg) error {
 	}
 	if msg.ID == "" {
 		msg.ID = <-cfg.uuidC
+	}
+	if msg.Time == "" {
+		msg.Time = big.NewInt(time.Now().Unix()).String()
 	}
 	if msg.TN == "" {
 		return errs("target node id is nonexistent")
