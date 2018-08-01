@@ -15,9 +15,9 @@ type ITable interface {
 	// 获得节点列表,把节点列表转换为[sp2p://<hex node id>@10.3.58.6:30303?discport=30301]的方式
 	getRawNodes() []string
 	// 添加节点
-	addNode(*node)
+	addNode(*node)error
 	// 更新节点
-	updateNode(*node)
+	updateNode(*node)error
 	// 删除节点
 	deleteNode(Hash)
 	// 随机得到路由表中的n个节点
