@@ -1,16 +1,16 @@
 package tests
 
 import (
-	"testing"
+	"fmt"
 	"github.com/kooksee/sp2p"
 	"net"
 	"net/url"
-	"fmt"
+	"testing"
 )
 
 func TestName(t *testing.T) {
 	sp2p.GenNodeID()
-	cfg:=sp2p.DefaultConfig()
+	cfg := sp2p.DefaultConfig()
 	cfg.InitP2P()
 	//p2p:=cfg.GetP2P()
 }
@@ -40,4 +40,8 @@ func TestName1(t *testing.T) {
 
 	fmt.Println(host)
 	fmt.Println(port)
+}
+
+func TestName2(t *testing.T) {
+	//s := "e183aece3f9b323551911daee2676d40ba366c8b7ffccfd4fa0e031af7105737"
 }

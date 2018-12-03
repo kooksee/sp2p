@@ -3,9 +3,9 @@ package sp2p
 import (
 	"time"
 
+	"errors"
 	"github.com/emirpasic/gods/lists/arraylist"
 	"github.com/kooksee/kdb"
-	"errors"
 )
 
 var bucketPrefix = []byte("bkt")

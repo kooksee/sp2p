@@ -1,13 +1,13 @@
 package sp2p
 
 import (
-	"time"
 	"github.com/inconshreveable/log15"
-	"net"
 	"github.com/kooksee/kdb"
-	"path/filepath"
 	"github.com/patrickmn/go-cache"
+	"net"
+	"path/filepath"
 	"sync"
+	"time"
 )
 
 var (

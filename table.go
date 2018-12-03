@@ -134,8 +134,8 @@ func (t *table) findNodeWithTargetBySelf(target Hash) []*node {
 	return t.findNodeWithTarget(target, t.selfNode.ID)
 }
 
-func (t *table) deleteNode(target Hash) {
-	t.buckets[logdist(t.selfNode.ID, target)].deleteNodes(target)
+func (t *table) deleteNode(target Hash)error {
+	return t.buckets[logdist(t.selfNode.ID, target)].deleteNodes(target)
 }
 
 func (t *table) findMinDisNodes(target Hash, number int) []*node {

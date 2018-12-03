@@ -12,4 +12,6 @@
 *.out
 .idea
 kdata
+vendor
+
 
